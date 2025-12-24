@@ -1,0 +1,56 @@
+<form class="stress-rest-form" autocomplete="off">
+    <div class="vault-banner-container">
+        <div class="vault-banner-img"></div>
+        <div class="vault-title">{{localize "STRESS.Dialog.ShortRest"}}</div>
+    </div>
+
+    <div class="status-hud">
+        <div class="hud-box hud-hp">
+            <div class="bar-fill" style="width: {{hpPercent}}%;"></div>
+            <div class="hud-label">{{localize "STRESS.Hud.HP"}}</div>
+            <div class="hud-val">{{hpVal}}/{{hpMax}}</div>
+        </div>
+        <div class="hud-box hud-stress">
+            <div class="bar-fill" style="width: {{stressPercent}}%;"></div>
+            <div class="hud-label">{{localize "STRESS.Hud.Stress"}}</div>
+            <div class="hud-val">{{stressVal}}</div>
+        </div>
+        <div class="hud-box hud-ex">
+            <div class="bar-fill" style="width: {{exhaustPercent}}%;"></div>
+            <div class="hud-label">{{localize "STRESS.Hud.Exhaustion"}}</div>
+            <div class="hud-val">{{exhaustVal}}</div>
+        </div>
+    </div>
+
+    <div class="vault-body">
+        
+        {{#if requireHealer}}
+            <p class="rest-note" style="color:#ff5555; font-weight:bold;">{{localize "STRESS.Msg.HealerReqWarning"}}</p>
+        {{else}}
+            <p class="rest-note">{{localize "STRESS.Msg.ShortRestPrompt"}}</p>
+        {{/if}}
+
+        <input type="hidden" name="healId" id="input-heal">
+
+        <div class="category-section">
+            <div class="category-header"><i class="fas fa-heart"></i> {{localize "STRESS.Category.Heal"}}</div>
+            <div class="inventory-grid">
+                <div class="item-slot selected" data-target="heal" data-value="">
+                    <div class="slot-icon-container"><i class="fas fa-times slot-icon-x"></i></div>
+                    <div class="slot-name">{{localize "STRESS.Inventory.Nothing"}}</div>
+                </div>
+                {{#each healItems}}
+                <div class="item-slot" data-target="heal" data-value="{{this.id}}">
+                    <div class="slot-icon-container">
+                        <img src="{{this.img}}" class="slot-icon">
+                        <span class="slot-qty">x{{this.system.quantity}}</span>
+                    </div>
+                    <div class="slot-name">{{this.name}}</div>
+                </div>
+                {{/each}}
+            </div>
+        </div>
+
+        <button type="submit" class="btn-gold"><i class="fas fa-check"></i> {{localize "STRESS.Button.ShortRest"}}</button>
+    </div>
+</form>

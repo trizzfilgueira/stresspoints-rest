@@ -1,0 +1,215 @@
+/* --- JANELA PRINCIPAL (FRAMELESS & ARRASTÁVEL) --- */
+.stress-rest-dialog {
+    background: #111215 !important;
+    border: 1px solid #000 !important;
+    box-shadow: 0 0 30px #000 !important;
+    border-radius: 2px !important;
+}
+
+/* Cabeçalho Invisível (Área de Arrastar) */
+.stress-rest-dialog .window-header {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    
+    /* Posicionamento Absoluto sobre o Banner */
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100% !important; /* Ocupa toda a largura para poder arrastar */
+    height: 40px !important; /* Altura suficiente para o clique */
+    z-index: 100;
+    
+    padding: 0 10px !important;
+    display: flex;
+    justify-content: flex-end; /* Joga o botão X para a direita */
+    align-items: center;
+    color: #cfcdc2;
+}
+
+/* Esconde o Título Texto */
+.stress-rest-dialog .window-title { display: none !important; }
+
+/* --- BOTÃO FECHAR (X) --- */
+.stress-rest-dialog .close {
+    font-size: 0 !important; /* Esconde o texto "Close" */
+    background: none !important;
+    border: none !important;
+    width: 30px;
+    height: 30px;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: all 0.2s;
+    text-shadow: 0 0 5px black;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Ícone do X (Caractere Universal) */
+.stress-rest-dialog .close::after {
+    content: "×"; /* Caractere de multiplicação universal */
+    font-family: "Arial", sans-serif; /* Fonte padrão segura */
+    font-weight: 400;
+    font-size: 28px; /* Tamanho grande para parecer ícone */
+    color: #cfcdc2;
+    display: block;
+    line-height: 1;
+    margin-top: -2px; /* Ajuste fino de altura */
+}
+
+.stress-rest-dialog .close:hover { 
+    opacity: 1; 
+    transform: scale(1.1);
+}
+.stress-rest-dialog .close:hover::after {
+    color: #fff;
+    text-shadow: 0 0 10px #eebb23;
+}
+
+/* REMOVE RESTO DA UI PADRÃO */
+.stress-rest-dialog .dialog-buttons { display: none !important; }
+
+.stress-rest-dialog .window-content {
+    background: transparent !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    color: #cfcdc2;
+    font-family: "Signika", sans-serif;
+}
+
+/* --- BANNER --- */
+.vault-banner-container {
+    position: relative; height: 90px; width: 100%; overflow: hidden;
+    border-bottom: 1px solid #333; background: #000;
+}
+.vault-banner-img {
+    position: absolute; width: 100%; height: 100%;
+    background-image: url("/systems/dnd5e/ui/official/banner-character-dark.webp");
+    background-position: top center; background-size: cover; opacity: 0.4;
+    mask-image: linear-gradient(to bottom, black 30%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, black 30%, transparent 100%);
+}
+.vault-title {
+    position: relative; z-index: 2; font-family: "Modesto Condensed", serif;
+    font-size: 36px; color: #ecebdb; text-align: center; padding-top: 25px;
+    text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 15px rgba(0,0,0,1);
+}
+
+/* --- HUD (BARRAS DE PROGRESSO) --- */
+.status-hud {
+    display: flex; gap: 8px; padding: 10px 15px;
+    background: #0a0a0c; border-bottom: 1px solid #222;
+}
+.hud-box {
+    flex: 1; background: #16171a; border: 1px solid #333; border-radius: 4px;
+    position: relative; overflow: hidden; height: 45px; display: flex;
+    flex-direction: column; justify-content: center; align-items: center;
+}
+.hud-label {
+    font-size: 10px; color: #ccc; letter-spacing: 1px; position: relative;
+    z-index: 10; text-transform: uppercase; font-weight: bold; text-shadow: 0 0 4px #000;
+}
+.hud-val {
+    font-family: "Modesto Condensed", serif; font-size: 22px; color: #fff;
+    line-height: 1; position: relative; z-index: 10;
+    text-shadow: 0 0 5px #000, 0 0 2px #000; margin-top: -2px;
+}
+.bar-fill {
+    position: absolute; bottom: 0; left: 0; height: 100%; width: 0%; z-index: 0;
+    transition: width 0.5s ease-in-out; opacity: 0.35;
+    border-right: 1px solid rgba(255,255,255,0.2);
+}
+.hud-hp .bar-fill { background: #ff4444; } .hud-hp .hud-val { color: #ffcccc; }
+.hud-stress .bar-fill { background: #bd93f9; } .hud-stress .hud-val { color: #eebbff; }
+.hud-ex .bar-fill { background: #f1fa8c; } .hud-ex .hud-val { color: #ffffaa; }
+
+/* --- CORPO --- */
+.vault-body { padding: 15px; background: #111215; overflow-y: auto; max-height: 600px; }
+.category-section { margin-bottom: 18px; }
+.category-header {
+    font-family: "Signika", sans-serif; font-weight: 700; color: #9f9275;
+    font-size: 13px; display: flex; align-items: center; gap: 8px;
+    margin-bottom: 8px; border-bottom: 1px solid #333; padding-bottom: 4px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+}
+.category-header i { color: #7a7971; font-size: 12px; }
+
+/* --- GRID --- */
+.inventory-grid {
+    display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px;
+    scrollbar-width: thin; scrollbar-color: #444 #0a0a0c;
+}
+.item-slot {
+    flex: 0 0 65px; background: #1a1a1c; border: 1px solid #292929;
+    border-radius: 4px; padding: 5px; cursor: pointer; transition: all 0.2s;
+    display: flex; flex-direction: column; align-items: center; position: relative;
+}
+.item-slot:hover { background: #222; border-color: #9f9275; }
+.item-slot.selected {
+    border-color: #c5a059; background: rgba(197, 160, 89, 0.15);
+    box-shadow: 0 0 10px rgba(197, 160, 89, 0.25);
+}
+.slot-icon-container {
+    position: relative; width: 34px; height: 34px; margin-bottom: 4px;
+    display: flex; align-items: center; justify-content: center;
+}
+.slot-icon {
+    width: 100%; height: 100%; object-fit: cover; border-radius: 3px;
+    border: 1px solid #333; filter: sepia(0.2);
+}
+.item-slot.selected .slot-icon { border-color: #c5a059; filter: sepia(0); }
+.slot-icon-x { font-size: 18px; color: #555; }
+.item-slot.selected .slot-icon-x { color: #c5a059; }
+.slot-qty {
+    position: absolute; bottom: -4px; right: -4px;
+    background: #000; border: 1px solid #444; color: #fff;
+    font-size: 9px; padding: 0 3px; border-radius: 3px;
+    font-weight: bold; z-index: 10;
+}
+.slot-name {
+    font-size: 10px; color: #aaa; text-align: center; line-height: 1.1;
+    overflow: hidden; text-overflow: ellipsis; display: -webkit-box;
+    -webkit-line-clamp: 2; -webkit-box-orient: vertical; height: 22px; width: 100%;
+}
+.item-slot.selected .slot-name { color: #fff; font-weight: bold; }
+
+/* --- CUSTOM SELECT --- */
+.custom-select-wrapper { position: relative; user-select: none; width: 100%; font-family: "Signika", sans-serif; font-size: 13px; }
+.custom-select-trigger {
+    position: relative; display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 12px; font-weight: bold; color: #ccc; background: #0f1012;
+    border: 1px solid #333; border-radius: 3px; cursor: pointer;
+}
+.custom-select-trigger:hover { border-color: #666; }
+.custom-select-trigger:after { content: '▼'; font-size: 10px; color: #555; }
+.custom-options {
+    position: absolute; top: 100%; left: 0; right: 0; border: 1px solid #333;
+    border-top: 0; background: #16171a; opacity: 0; visibility: hidden;
+    pointer-events: none; z-index: 50; box-shadow: 0 5px 15px rgba(0,0,0,0.8);
+}
+.custom-select-wrapper.open .custom-options { opacity: 1; visibility: visible; pointer-events: all; }
+.custom-option {
+    padding: 10px 12px; cursor: pointer; color: #999; border-bottom: 1px solid #222; display: block;
+}
+.custom-option:hover { color: #fff; background: #222; padding-left: 18px; }
+.custom-option.selected { color: #eebb23; background: #0a0a0c; }
+
+/* --- BOTÃO --- */
+.btn-gold {
+    width: 100%; height: 45px; background: linear-gradient(to bottom, #8f866b, #615a46);
+    border: 1px solid #c2b59b; color: #ffffff; font-family: "Modesto Condensed", serif;
+    font-size: 22px; font-weight: 800; text-transform: uppercase; border-radius: 3px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
+    margin-top: 20px; box-shadow: 0 0 10px rgba(194, 181, 155, 0.4), inset 0 1px 0 rgba(255,255,255,0.2);
+}
+.btn-gold:hover {
+    background: linear-gradient(to bottom, #a39b80, #726b55); border-color: #e0d8c3;
+    box-shadow: 0 0 20px rgba(194, 181, 155, 0.6);
+}
+.rest-note {
+    text-align: center; color: #666; font-style: italic; font-size: 13px;
+    margin-bottom: 15px; padding-bottom: 8px; border-bottom: 1px solid #222;
+}

@@ -1,0 +1,113 @@
+{
+  "STRESS.Settings.MaxStress.Name": "Máximo de Estresse",
+  "STRESS.Settings.MaxStress.Hint": "Valor máximo acumulado antes de morrer (Padrão: 12).",
+  "STRESS.Settings.Ratio.Name": "Proporção Estresse/Exaustão",
+  "STRESS.Settings.Ratio.Hint": "Quantos pontos de estresse equivalem a 1 nível de exaustão.",
+  "STRESS.Settings.AutoHp.Name": "Automação: Colapso (0 PV)",
+  "STRESS.Settings.AutoHp.Hint": "Gera estresse automaticamente ao cair a 0 PV.",
+  "STRESS.Settings.HealerReq.Name": "Exigir Item de Cura (Descanso Curto)",
+  "STRESS.Settings.HealerReq.Hint": "Se ativo, o jogador PRECISA gastar um uso de Kit de Curandeiro/Poção para rolar dados de vida.",
+  "STRESS.Settings.FoodMode.Name": "Modo de Desnutrição (Comida)",
+  "STRESS.Settings.FoodMode.Hint": "Define o que acontece se o jogador não comer.",
+  "STRESS.Settings.DrinkMode.Name": "Modo de Desidratação (Bebida)",
+  "STRESS.Settings.DrinkMode.Hint": "Define o que acontece se o jogador não beber.",
+  "STRESS.Settings.EnvMode.Name": "Ativar Desconforto Ambiental",
+  "STRESS.Settings.EnvMode.Hint": "Se ativo, exibe o seletor de perigo do ambiente e exige testes de constituição.",
+  
+  "STRESS.Options.Mandatory": "Consumo Obrigatório (Gera Estresse)",
+  "STRESS.Options.Roll": "Solicitar Rolagem (CD 10)",
+
+  "STRESS.Dialog.LongRest": "Descanso Longo",
+  "STRESS.Dialog.ShortRest": "Descanso Curto",
+  
+  "STRESS.Hud.HP": "VIDA",
+  "STRESS.Hud.Stress": "ESTRESSE",
+  "STRESS.Hud.Exhaustion": "EXAUSTÃO",
+
+  "STRESS.Category.Environment": "AMBIENTE",
+  "STRESS.Category.Food": "COMIDA",
+  "STRESS.Category.Drink": "BEBIDA",
+  "STRESS.Category.Heal": "CURA / POÇÕES",
+
+  "STRESS.Env.Safe": "Seguro",
+  "STRESS.Env.LowSafe": "Pouco Seguro",
+  "STRESS.Env.LowDanger": "Pouco Perigoso",
+  "STRESS.Env.Danger": "Perigoso",
+  "STRESS.Env.HighDanger": "Muito Perigoso",
+  "STRESS.Env.Hostile": "Extremamente Hostil",
+
+  "STRESS.Inventory.Nothing": "Nada",
+  "STRESS.Inventory.NoItemUsed": "Nenhum item usado.",
+  "STRESS.Item.Tent": "Barraca",
+  "STRESS.Item.Bedroll": "Saco de Dormir",
+
+  "STRESS.Rarity.Uncommon": "Incomum",
+  "STRESS.Rarity.Rare": "Raro",
+  "STRESS.Rarity.VeryRare": "Muito Raro",
+  "STRESS.Rarity.Legendary": "Lendário",
+
+  "STRESS.Warn.ItemEmpty": "{name} está vazio.",
+  "STRESS.Warn.NoMoreItem": "Você não tem mais {name}.",
+  
+  "STRESS.Button.LongRest": "REALIZAR DESCANSO",
+  "STRESS.Button.ShortRest": "DESCANSAR",
+
+  "STRESS.Labels.EnvCheck": "Teste de Ambiente",
+  "STRESS.Labels.FoodCheck": "Teste de Fome",
+  "STRESS.Labels.DrinkCheck": "Teste de Sede",
+  
+  "STRESS.Msg.EatSuccess": "Comeu",
+  "STRESS.Msg.DrinkSuccess": "Bebeu",
+  "STRESS.Msg.FailStress": "Falhou: +1 Estresse",
+  "STRESS.Msg.Saved": "Passou no teste (Sem Estresse)",
+  "STRESS.Msg.NoItemHeal": "Sem item: PV não será recuperado.",
+  "STRESS.Msg.EnvironmentSafe": "Ambiente Seguro.",
+  "STRESS.Msg.HealerReqWarning": "⚠ Item de cura exigido para recuperar PV!",
+  "STRESS.Msg.ShortRestPrompt": "Deseja usar algum item durante o descanso?",
+
+  "STRESS.Report.Title": "RELATÓRIO DE DESCANSO",
+  "STRESS.Report.Start": "Início",
+  "STRESS.Report.Recovery": "Recuperação",
+  "STRESS.Report.Modifiers": "Modificadores",
+  "STRESS.Report.FinalStress": "ESTRESSE FINAL",
+  "STRESS.Report.ShortRestDone": "DESCANSO CURTO REALIZADO",
+  "STRESS.Report.HPRestored": "Recuperou {val} PV.",
+  "STRESS.Report.HPCritical": "CRÍTICO: HP revertido (Exige Item de Cura).",
+  "STRESS.Report.UsedItem": "Usou",
+
+  "STRESS.Collapse.Title": "COLAPSO!",
+  "STRESS.Collapse.SubTitle": "PV reduzido a 0",
+  "STRESS.Collapse.Gain": "+2 ESTRESSE",
+  "STRESS.Collapse.ExhaustionUp": "(Nível de Exaustão Aumentou!)",
+
+  "STRESS.Exhaustion.Title": "FADIGA",
+  "STRESS.Exhaustion.Level": "NÍVEL",
+  "STRESS.Exhaustion.L1": "Você começa a falhar: −2 em testes de d20 e −5 ft de deslocamento.",
+  "STRESS.Exhaustion.L2": "O corpo pesa: −4 em testes de d20 e −10 ft de deslocamento.",
+  "STRESS.Exhaustion.L3": "O desgaste é visível: −6 em testes de d20 e −15 ft de deslocamento.",
+  "STRESS.Exhaustion.L4": "Cada ação dói: −8 em testes de d20 e −20 ft de deslocamento.",
+  "STRESS.Exhaustion.L5": "À beira do colapso: −10 em testes de d20 e −25 ft de deslocamento.",
+  "STRESS.Exhaustion.L6": "O corpo cede: a escuridão venceu.",
+
+  "STRESS.Panel.Title": "Controle de Estresse",
+  "STRESS.Panel.GroupStatus": "STATUS DO GRUPO",
+  "STRESS.Panel.GMReport": "RELATÓRIO DO MESTRE",
+  "STRESS.Panel.NoPlayers": "Nenhum personagem de jogador encontrado.",
+  "STRESS.Panel.StressLevel": "NÍVEL DE ESTRESSE",
+  "STRESS.Panel.StressLabel": "Estresse",
+  "STRESS.Panel.SendReport": "Enviar Relatório ao Chat",
+
+  "STRESS.Feature.Title": "No Limite",
+  "STRESS.Feature.Description": "Você deseja queimar suas reservas vitais para obter vantagem na próxima jogada?",
+  "STRESS.Feature.GainLabel": "GANHO",
+  "STRESS.Feature.GainValue": "VANTAGEM",
+  "STRESS.Feature.CostLabel": "CUSTO",
+  "STRESS.Feature.CostValue": "+{val} ESTRESSE",
+  
+  "STRESS.Btn.Cancel": "CANCELAR",
+  "STRESS.Btn.Accept": "ACEITAR",
+
+  "STRESS.Chat.LimitExceeded": "LIMITE EXCEDIDO",
+  "STRESS.Chat.LimitDesc": "Aceitou o risco em troca de poder.",
+  "STRESS.Report.BandageEffect": "Bandagem: Recuperou 50% do PV ({val})"
+}

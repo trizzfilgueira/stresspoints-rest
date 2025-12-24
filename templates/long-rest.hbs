@@ -1,0 +1,108 @@
+<form class="stress-rest-form" autocomplete="off">
+    <div class="vault-banner-container">
+        <div class="vault-banner-img"></div>
+        <div class="vault-title">{{localize "STRESS.Dialog.LongRest"}}</div>
+    </div>
+
+    <div class="status-hud">
+        <div class="hud-box hud-hp">
+            <div class="bar-fill" style="width: {{hpPercent}}%;"></div>
+            <div class="hud-label">{{localize "STRESS.Hud.HP"}}</div>
+            <div class="hud-val">{{hpVal}}/{{hpMax}}</div>
+        </div>
+        <div class="hud-box hud-stress">
+            <div class="bar-fill" style="width: {{stressPercent}}%;"></div>
+            <div class="hud-label">{{localize "STRESS.Hud.Stress"}}</div>
+            <div class="hud-val">{{stressVal}}</div>
+        </div>
+        <div class="hud-box hud-ex">
+            <div class="bar-fill" style="width: {{exhaustPercent}}%;"></div>
+            <div class="hud-label">{{localize "STRESS.Hud.Exhaustion"}}</div>
+            <div class="hud-val">{{exhaustVal}}</div>
+        </div>
+    </div>
+
+    <div class="vault-body">
+        
+        <input type="hidden" name="foodId" id="input-food">
+        <input type="hidden" name="drinkId" id="input-drink">
+        <input type="hidden" name="healId" id="input-heal">
+        <input type="hidden" name="environment" id="input-environment" value="0">
+
+        {{#if useEnvironment}}
+        <div class="category-section">
+            <div class="category-header"><i class="fas fa-map-marker-alt"></i> {{localize "STRESS.Category.Environment"}}</div>
+            <div class="custom-select-wrapper">
+                <div class="custom-select-trigger"><span>{{localize "STRESS.Env.Safe"}}</span></div>
+                <div class="custom-options">
+                    <span class="custom-option selected" data-value="0">⛺ {{localize "STRESS.Env.Safe"}}</span>
+                    <span class="custom-option" data-value="10">⚠️ {{localize "STRESS.Env.LowSafe"}}</span>
+                    <span class="custom-option" data-value="12">⚠️ {{localize "STRESS.Env.LowDanger"}}</span>
+                    <span class="custom-option" data-value="14">💀 {{localize "STRESS.Env.Danger"}}</span>
+                    <span class="custom-option" data-value="16">💀 {{localize "STRESS.Env.HighDanger"}}</span>
+                    <span class="custom-option" data-value="18">☠️ {{localize "STRESS.Env.Hostile"}}</span>
+                </div>
+            </div>
+        </div>
+        {{/if}}
+
+        <div class="category-section">
+            <div class="category-header"><i class="fas fa-drumstick-bite"></i> {{localize "STRESS.Category.Food"}}</div>
+            <div class="inventory-grid">
+                <div class="item-slot selected" data-target="food" data-value="">
+                    <div class="slot-icon-container"><i class="fas fa-times slot-icon-x"></i></div>
+                    <div class="slot-name">{{localize "STRESS.Inventory.Nothing"}}</div>
+                </div>
+                {{#each foodItems}}
+                <div class="item-slot" data-target="food" data-value="{{this.id}}">
+                    <div class="slot-icon-container">
+                        <img src="{{this.img}}" class="slot-icon">
+                        <span class="slot-qty">x{{this.system.quantity}}</span>
+                    </div>
+                    <div class="slot-name">{{this.name}}</div>
+                </div>
+                {{/each}}
+            </div>
+        </div>
+
+        <div class="category-section">
+            <div class="category-header"><i class="fas fa-tint"></i> {{localize "STRESS.Category.Drink"}}</div>
+            <div class="inventory-grid">
+                <div class="item-slot selected" data-target="drink" data-value="">
+                    <div class="slot-icon-container"><i class="fas fa-times slot-icon-x"></i></div>
+                    <div class="slot-name">{{localize "STRESS.Inventory.Nothing"}}</div>
+                </div>
+                {{#each drinkItems}}
+                <div class="item-slot" data-target="drink" data-value="{{this.id}}">
+                    <div class="slot-icon-container">
+                        <img src="{{this.img}}" class="slot-icon">
+                        <span class="slot-qty">x{{this.system.quantity}}</span>
+                    </div>
+                    <div class="slot-name">{{this.name}}</div>
+                </div>
+                {{/each}}
+            </div>
+        </div>
+
+        <div class="category-section">
+            <div class="category-header"><i class="fas fa-heart"></i> {{localize "STRESS.Category.Heal"}}</div>
+            <div class="inventory-grid">
+                <div class="item-slot selected" data-target="heal" data-value="">
+                    <div class="slot-icon-container"><i class="fas fa-times slot-icon-x"></i></div>
+                    <div class="slot-name">{{localize "STRESS.Inventory.Nothing"}}</div>
+                </div>
+                {{#each healItems}}
+                <div class="item-slot" data-target="heal" data-value="{{this.id}}">
+                    <div class="slot-icon-container">
+                        <img src="{{this.img}}" class="slot-icon">
+                        <span class="slot-qty">x{{this.system.quantity}}</span>
+                    </div>
+                    <div class="slot-name">{{this.name}}</div>
+                </div>
+                {{/each}}
+            </div>
+        </div>
+
+        <button type="submit" class="btn-gold"><i class="fas fa-campground"></i> {{localize "STRESS.Button.LongRest"}}</button>
+    </div>
+</form>

@@ -1,0 +1,69 @@
+{
+  "id": "stresspoints-rest",
+  "title": "Stress Points & Rest",
+  "version": "1.0.0",
+  "description": "Customized Stress and Rest System for D&D 2024",
+  "authors": [
+    {
+      "name": "Trizzfilgueira",
+      "discord": "trizzfilgueira",
+      "flags": {}
+    }
+  ],
+  "compatibility": {
+    "minimum": "12",
+    "verified": "13"
+  },
+  "relationships": {
+    "systems": [
+      {
+        "id": "dnd5e",
+        "type": "system",
+        "compatibility": {
+          "minimum": "3.0.0",
+          "verified": "4.0.0"
+        }
+      }
+    ]
+  },
+  "esmodules": [
+    "scripts/main.js"
+  ],
+  "styles": [
+    "styles/stress-rest.css"
+  ],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "languages/en.json"
+    },
+    {
+      "lang": "pt-BR",
+      "name": "Português (Brasil)",
+      "path": "languages/pt-br.json"
+    }
+  ],
+  "packs": [
+    {
+      "name": "stress-items",
+      "label": "Stress Items",
+      "path": "packs/stress-items",
+      "type": "Item",
+      "system": "dnd5e"
+    },
+    {
+      "name": "stress-macros",
+      "label": "Stress Macros",
+      "path": "packs/stress-macros",
+      "type": "Macro",
+      "system": "dnd5e"
+    }
+  ],
+  "url": "",
+  "manifest": "",
+  "download": "",
+  "flags": {
+    "canUpload": true
+  }
+}
