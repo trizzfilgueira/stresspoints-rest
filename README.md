@@ -60,7 +60,7 @@ A "Risk vs Reward" mechanic included in the compendium.
 ## 📦 Installation Guide
 
 1.  **Copy the Manifest Link:**
-    `YOUR_MANIFEST_LINK_HERE`
+    `https://raw.githubusercontent.com/trizzfilgueira/stresspoints-rest/main/module.json`
 2.  Open **Foundry VTT**.
 3.  Go to the **Add-on Modules** tab.
 4.  Click **Install Module**.
