@@ -59,10 +59,10 @@
       "type": "Macro",
       "system": "dnd5e"
     }
-  ],
-  "url": "",
-  "manifest": "",
-  "download": "",
+],
+  "url": "https://github.com/trizzfilgueira/stresspoints-rest",
+  "manifest": "https://raw.githubusercontent.com/trizzfilgueira/stresspoints-rest/main/module.json",
+  "download": "https://github.com/trizzfilgueira/stresspoints-rest/archive/refs/heads/main.zip",
   "flags": {
     "canUpload": true
   }
