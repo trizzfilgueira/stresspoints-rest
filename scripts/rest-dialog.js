@@ -48,8 +48,8 @@ export class StressRestDialog extends FormApplication {
         return data;
     }
 
-    _isDrink(i) { return i.name.toLowerCase().match(/água|water|drink|suco|juice|beer|cerveja|vinho|wine|cerveja|ale|cantil|skin/); }
-    _isHealerKit(i) { return i.name.toLowerCase().match(/curandeiro|healer|kit/); }
+    _isDrink(i) { return i.name.toLowerCase().match(/água|water|drink|suco|juice|beer|cerveja|vinho|wine|cerveja|ale|cantil|skin|wasser|bier|wein|tea|tee|saft|milk|milch|met/); }
+    _isHealerKit(i) { return i.name.toLowerCase().match(/curandeiro|healer|kit|heiler/); }
 
     activateListeners(html) {
         super.activateListeners(html);
@@ -269,4 +269,5 @@ export class StressRestDialog extends FormApplication {
             content: content
         });
     }
+
 }
