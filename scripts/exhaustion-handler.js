@@ -1,14 +1,12 @@
-/**
- * ARQUIVO: exhaustion-handler.js
- * Monitora aumento de Exaustão e envia cards narrativos traduzidos.
- */
-
 const STRESS_BANNER = "systems/dnd5e/ui/official/banner-character-dark.webp";
 
 export class ExhaustionHandler {
     
     static init() {
         Hooks.on("preUpdateActor", (actor, changes, options, userId) => {
+            // TRAVA PARA NPC: Não manda card de exaustão para monstros
+            if (actor.type !== "character") return;
+
             const newEx = foundry.utils.getProperty(changes, "system.attributes.exhaustion");
             if (newEx === undefined || newEx === null) return;
 
@@ -23,17 +21,7 @@ export class ExhaustionHandler {
     }
 
     static getFlavor(level) {
-        // Cores hardcoded (estilo)
-        const colors = {
-            1: "#eebb23",
-            2: "#eebb23",
-            3: "#ffaa00",
-            4: "#ff5555",
-            5: "#ff0000",
-            6: "#880000"
-        };
-
-        // Textos via i18n
+        const colors = { 1: "#eebb23", 2: "#eebb23", 3: "#ffaa00", 4: "#ff5555", 5: "#ff0000", 6: "#880000" };
         return {
             color: colors[level] || "#ccc",
             text: game.i18n.localize(`STRESS.Exhaustion.L${level}`)
@@ -42,6 +30,7 @@ export class ExhaustionHandler {
 
     static createCard(actor, level) {
         const flavor = ExhaustionHandler.getFlavor(level);
+        const STRESS_BANNER = "systems/dnd5e/ui/official/banner-character-dark.webp";
 
         const content = `
         <div style="background:#111215; border:1px solid #000; color:#cfcdc2; font-family:'Signika', sans-serif; margin-top:5px;">
@@ -51,19 +40,16 @@ export class ExhaustionHandler {
                     ${game.i18n.localize("STRESS.Exhaustion.Title")}
                 </h3>
             </div>
-            
             <div style="padding:15px; text-align:center;">
                 <div style="font-family:'Modesto Condensed', serif; font-size:20px; color:#ecebdb; margin-bottom:10px; text-transform:uppercase;">
                     ${actor.name}
                 </div>
-
                 <div style="margin-bottom:10px;">
                     <i class="fas fa-skull" style="font-size:30px; color:${flavor.color}; text-shadow:0 0 10px ${flavor.color};"></i>
                     <div style="font-size:28px; font-weight:bold; font-family:'Modesto Condensed', serif; color:${flavor.color}; line-height:1;">
                         ${game.i18n.localize("STRESS.Exhaustion.Level")} ${level}
                     </div>
                 </div>
-
                 <div style="background:rgba(0, 0, 0, 0.4); border:1px solid ${flavor.color}; padding:10px; border-radius:3px;">
                     <div style="font-size:14px; color:#fff; font-style:italic; line-height:1.4;">
                         "${flavor.text}"
