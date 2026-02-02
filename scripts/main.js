@@ -7,7 +7,6 @@ import { PushingLimitsDialog } from "./pushing-limits.js";
 Hooks.once("init", () => {
     console.log("Stress Points & Rest | Inicializando...");
 
-    // --- CONFIGURAÇÕES ---
     game.settings.register(STRESS_CONFIG.MODULE_ID, "maxStress", {
         name: "STRESS.Settings.MaxStress.Name", hint: "STRESS.Settings.MaxStress.Hint", scope: "world", config: true, type: Number, default: 12, onChange: value => { STRESS_CONFIG.MAX_STRESS = value; }
     });
@@ -38,16 +37,13 @@ Hooks.once("init", () => {
     console.log("Stress Points & Rest | Configurações Carregadas.");
 });
 
-// --- ORGANIZAÇÃO DE COMPÊNDIOS (NOVO) ---
 Hooks.once("ready", async () => {
-    // Apenas GM deve executar operações de organização de pastas para evitar conflitos
     if (!game.user.isGM) return;
 
     const folderName = "Stress Points & Rest";
-    const folderColor = "#0077e6"; // RGB(0, 119, 230) convertido para Hex
+    const folderColor = "#0077e6"; 
     const packsToMove = ["stresspoints-rest.stress-items", "stresspoints-rest.stress-macros"];
 
-    // 1. Verifica se a pasta já existe, senão cria
     let folder = game.packs.folders.find(f => f.name === folderName);
     if (!folder) {
         folder = await Folder.create({
@@ -57,10 +53,8 @@ Hooks.once("ready", async () => {
         });
     }
 
-    // 2. Move os compêndios do módulo para dentro da pasta
     for (const packKey of packsToMove) {
         const pack = game.packs.get(packKey);
-        // Só move se o pack existir e ainda não estiver na pasta certa
         if (pack && pack.folder?.id !== folder.id) {
             await pack.configure({ folder: folder.id });
         }
@@ -70,6 +64,10 @@ Hooks.once("ready", async () => {
 // --- HOOKS DE ESTRESSE E DESCANSO ---
 Hooks.on("preUpdateActor", (actor, changes, options, userId) => {
     if (options.stressSync || options.stressRest) return;
+    
+    // TRAVA PARA NPC: Ignora se não for personagem de jogador
+    if (actor.type !== "character") return;
+
     if (hasProperty(changes, "system.attributes.exhaustion")) {
         const newEx = changes.system.attributes.exhaustion;
         const oldEx = actor.system.attributes.exhaustion;
@@ -85,6 +83,10 @@ Hooks.on("preUpdateActor", (actor, changes, options, userId) => {
 
 Hooks.on("updateActor", async (actor, changes, options, userId) => {
     if (!game.user.isGM && !actor.isOwner) return;
+    
+    // TRAVA PARA NPC: NPCs não geram card de colapso
+    if (actor.type !== "character") return;
+
     const useAutoHp = game.settings.get(STRESS_CONFIG.MODULE_ID, "autoHpZero");
     if (!useAutoHp) return;
 
@@ -117,48 +119,32 @@ Hooks.on("updateActor", async (actor, changes, options, userId) => {
 });
 
 Hooks.on("dnd5e.preLongRest", (actor, config) => {
-    if (actor.type === "group") return true;
+    if (actor.type !== "character") return true; // NPCs descansam normal pelo sistema base
     if (config.stressRestModule) return true;
     new StressRestDialog(actor).render(true);
     return false;
 });
 
 Hooks.on("dnd5e.preShortRest", (actor, config) => {
-    if (actor.type === "group") return true;
+    if (actor.type !== "character") return true;
     if (config.stressRestModule) return true;
     new StressShortRestDialog(actor).render(true);
     return false;
 });
 
-// --- >>> GATILHO AUTOMÁTICO DO ITEM <<< ---
-
 function checkAndActivate(item) {
-    if (!item) return;
+    if (!item || !item.actor || item.actor.type !== "character") return;
 
-    // 1. Verifica pela Flag (Se você usou a macro de setup)
     const isFlagged = item.getFlag("stresspoints-rest", "feature") === "no-limite";
-    
-    // 2. Verifica pelo Nome (Robustez para PT/EN)
     const name = item.name.toLowerCase().trim();
-    const isNameMatch = name === "no limite" || 
-                        name === "pushing limits" || 
-                        name.includes("no limite") || 
-                        name.includes("pushing limits");
+    const isNameMatch = name === "no limite" || name === "pushing limits" || name.includes("no limite") || name.includes("pushing limits");
 
     if (isFlagged || isNameMatch) {
-        console.log(`Stress Module | Item '${item.name}' detectado! Aplicando estresse...`);
         PushingLimitsDialog.activate(item);
     }
 }
 
-// Suporte para D&D 5e v3.x (Legacy)
-Hooks.on("dnd5e.useItem", (item, config, options) => {
-    checkAndActivate(item);
-});
-
-// Suporte para D&D 5e v4.x (Activities)
+Hooks.on("dnd5e.useItem", (item, config, options) => { checkAndActivate(item); });
 Hooks.on("dnd5e.postUseActivity", (activity, usage, results) => {
-    if (activity && activity.item) {
-        checkAndActivate(activity.item);
-    }
+    if (activity && activity.item) { checkAndActivate(activity.item); }
 });
