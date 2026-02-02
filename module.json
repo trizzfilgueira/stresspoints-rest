@@ -1,7 +1,7 @@
 {
   "id": "stresspoints-rest",
   "title": "Stress Points & Rest",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Customized Stress and Rest System for D&D 2024",
   "authors": [
     {
@@ -67,3 +67,4 @@
     "canUpload": true
   }
 }
+
