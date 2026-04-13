@@ -49,12 +49,6 @@ Consuming supplies is mandatory. Better quality food reduces Stress:
 | **Very Rare** | Removes **-3** Stress |
 | **Legendary** | Removes **-4** Stress |
 
-### 4. Pushing Limits
-A "Risk vs Reward" mechanic included in the compendium.
-* **Effect:** A character can accept physical toll to gain **Advantage** on a roll.
-* **Cost:** Immediately gain **1 Level of Exhaustion** (or equivalent Stress).
-* **Limit:** Can be used once per Long Rest.
-
 ---
 
 ## 📦 Installation Guide
