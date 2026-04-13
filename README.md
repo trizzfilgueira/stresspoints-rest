@@ -1,6 +1,6 @@
 # Stress Points & Rest (D&D 5e)
 
-![Foundry v13](https://img.shields.io/badge/Foundry-v12-orange)
+![Foundry v13](https://img.shields.io/badge/Foundry-v13-orange)
 ![System D&D5e](https://img.shields.io/badge/System-D%26D5e-blue)
 ![Language](https://img.shields.io/badge/Language-English%20%7C%20Português-green)
 
