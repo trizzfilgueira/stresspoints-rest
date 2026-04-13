@@ -104,6 +104,4 @@ You can customize the mechanics in **Configure Settings**:
 
 * **Author:** trizzfilgueira
 * **System:** Dungeons & Dragons 5th Edition (2024 ruleset adaptation).
-* **License:** MIT License.
-
 ---
