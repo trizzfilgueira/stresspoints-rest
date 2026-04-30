@@ -1,102 +1,197 @@
 import { StressManager, STRESS_CONFIG } from "./stress-manager.js";
 import { StressRestDialog } from "./rest-dialog.js";
 import { StressShortRestDialog } from "./short-rest-dialog.js";
-import { ExhaustionHandler } from "./exhaustion-handler.js"; 
-import { PushingLimitsDialog } from "./pushing-limits.js"; 
+import { ExhaustionHandler } from "./exhaustion-handler.js";
 
 Hooks.once("init", () => {
     console.log("Stress Points & Rest | Inicializando...");
 
     game.settings.register(STRESS_CONFIG.MODULE_ID, "maxStress", {
-        name: "STRESS.Settings.MaxStress.Name", hint: "STRESS.Settings.MaxStress.Hint", scope: "world", config: true, type: Number, default: 12, onChange: value => { STRESS_CONFIG.MAX_STRESS = value; }
+        name: "STRESS.Settings.MaxStress.Name",
+        hint: "STRESS.Settings.MaxStress.Hint",
+        scope: "world",
+        config: true,
+        type: Number,
+        default: 12,
+        onChange: value => { STRESS_CONFIG.MAX_STRESS = value; }
     });
+
     game.settings.register(STRESS_CONFIG.MODULE_ID, "stressRatio", {
-        name: "STRESS.Settings.Ratio.Name", hint: "STRESS.Settings.Ratio.Hint", scope: "world", config: true, type: Number, default: 2, onChange: value => { STRESS_CONFIG.RATIO = value; }
+        name: "STRESS.Settings.Ratio.Name",
+        hint: "STRESS.Settings.Ratio.Hint",
+        scope: "world",
+        config: true,
+        type: Number,
+        default: 2,
+        onChange: value => { STRESS_CONFIG.RATIO = value; }
     });
+
+    game.settings.register(STRESS_CONFIG.MODULE_ID, "stressOnZeroHp", {
+        name: "STRESS.Settings.StressZero.Name",
+        hint: "STRESS.Settings.StressZero.Hint",
+        scope: "world",
+        config: true,
+        type: Number,
+        default: 2
+    });
+
     game.settings.register(STRESS_CONFIG.MODULE_ID, "autoHpZero", {
-        name: "STRESS.Settings.AutoHp.Name", hint: "STRESS.Settings.AutoHp.Hint", scope: "world", config: true, type: Boolean, default: true
+        name: "STRESS.Settings.AutoHp.Name",
+        hint: "STRESS.Settings.AutoHp.Hint",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: true
     });
-    game.settings.register(STRESS_CONFIG.MODULE_ID, "requireHealerKit", {
-        name: "STRESS.Settings.HealerReq.Name", hint: "STRESS.Settings.HealerReq.Hint", scope: "world", config: true, type: Boolean, default: true
+
+    game.settings.register(STRESS_CONFIG.MODULE_ID, "requireHealerKitLong", {
+        name: "STRESS.Settings.HealerLong.Name",
+        hint: "STRESS.Settings.HealerLong.Hint",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: true
     });
+
+    game.settings.register(STRESS_CONFIG.MODULE_ID, "requireHealerKitShort", {
+        name: "STRESS.Settings.HealerShort.Name",
+        hint: "STRESS.Settings.HealerShort.Hint",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: true
+    });
+
+    game.settings.register(STRESS_CONFIG.MODULE_ID, "foodCost", {
+        name: "STRESS.Settings.FoodCost.Name",
+        scope: "world",
+        config: true,
+        type: Number,
+        default: 0.5
+    });
+
+    game.settings.register(STRESS_CONFIG.MODULE_ID, "foodCurrency", {
+        name: "STRESS.Settings.FoodCur.Name",
+        scope: "world",
+        config: true,
+        type: String,
+        choices: { "pp": "PP", "gp": "GP", "ep": "EP", "sp": "SP", "cp": "CP" },
+        default: "gp"
+    });
+
+    game.settings.register(STRESS_CONFIG.MODULE_ID, "drinkCost", {
+        name: "STRESS.Settings.DrinkCost.Name",
+        scope: "world",
+        config: true,
+        type: Number,
+        default: 0.2
+    });
+
+    game.settings.register(STRESS_CONFIG.MODULE_ID, "drinkCurrency", {
+        name: "STRESS.Settings.DrinkCur.Name",
+        scope: "world",
+        config: true,
+        type: String,
+        choices: { "pp": "PP", "gp": "GP", "ep": "EP", "sp": "SP", "cp": "CP" },
+        default: "gp"
+    });
+
     game.settings.register(STRESS_CONFIG.MODULE_ID, "foodMode", {
-        name: "STRESS.Settings.FoodMode.Name", hint: "STRESS.Settings.FoodMode.Hint", scope: "world", config: true, type: String, choices: { "mandatory": "STRESS.Options.Mandatory", "roll": "STRESS.Options.Roll" }, default: "mandatory"
+        name: "STRESS.Settings.FoodMode.Name",
+        scope: "world",
+        config: true,
+        type: String,
+        choices: { "mandatory": "STRESS.Options.Mandatory", "roll": "STRESS.Options.Roll" },
+        default: "mandatory"
     });
+
     game.settings.register(STRESS_CONFIG.MODULE_ID, "drinkMode", {
-        name: "STRESS.Settings.DrinkMode.Name", hint: "STRESS.Settings.DrinkMode.Hint", scope: "world", config: true, type: String, choices: { "mandatory": "STRESS.Options.Mandatory", "roll": "STRESS.Options.Roll" }, default: "mandatory"
+        name: "STRESS.Settings.DrinkMode.Name",
+        scope: "world",
+        config: true,
+        type: String,
+        choices: { "mandatory": "STRESS.Options.Mandatory", "roll": "STRESS.Options.Roll" },
+        default: "mandatory"
     });
+
     game.settings.register(STRESS_CONFIG.MODULE_ID, "environmentMode", {
-        name: "STRESS.Settings.EnvMode.Name", hint: "STRESS.Settings.EnvMode.Hint", scope: "world", config: true, type: Boolean, default: true
+        name: "STRESS.Settings.EnvMode.Name",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: true
+    });
+
+    game.settings.register(STRESS_CONFIG.MODULE_ID, "maxFoodRarity", {
+        name: "STRESS.Settings.MaxFoodRarity.Name",
+        hint: "STRESS.Settings.MaxFoodRarity.Hint",
+        scope: "world",
+        config: true,
+        type: String,
+        choices: {
+            "common":    "STRESS.Rarity.Common",
+            "uncommon":  "STRESS.Rarity.Uncommon",
+            "rare":      "STRESS.Rarity.Rare",
+            "veryrare":  "STRESS.Rarity.VeryRare",
+            "legendary": "STRESS.Rarity.Legendary"
+        },
+        default: "common"
+    });
+
+    game.settings.register(STRESS_CONFIG.MODULE_ID, "maxDrinkRarity", {
+        name: "STRESS.Settings.MaxDrinkRarity.Name",
+        hint: "STRESS.Settings.MaxDrinkRarity.Hint",
+        scope: "world",
+        config: true,
+        type: String,
+        choices: {
+            "common":    "STRESS.Rarity.Common",
+            "uncommon":  "STRESS.Rarity.Uncommon",
+            "rare":      "STRESS.Rarity.Rare",
+            "veryrare":  "STRESS.Rarity.VeryRare",
+            "legendary": "STRESS.Rarity.Legendary"
+        },
+        default: "common"
     });
 
     STRESS_CONFIG.MAX_STRESS = game.settings.get(STRESS_CONFIG.MODULE_ID, "maxStress");
     STRESS_CONFIG.RATIO = game.settings.get(STRESS_CONFIG.MODULE_ID, "stressRatio");
-    
+
     ExhaustionHandler.init();
-
-    console.log("Stress Points & Rest | Configurações Carregadas.");
 });
 
-Hooks.once("ready", async () => {
-    if (!game.user.isGM) return;
-
-    const folderName = "Stress Points & Rest";
-    const folderColor = "#0077e6"; 
-    const packsToMove = ["stresspoints-rest.stress-items", "stresspoints-rest.stress-macros"];
-
-    let folder = game.packs.folders.find(f => f.name === folderName);
-    if (!folder) {
-        folder = await Folder.create({
-            name: folderName,
-            type: "Compendium",
-            color: folderColor
-        });
-    }
-
-    for (const packKey of packsToMove) {
-        const pack = game.packs.get(packKey);
-        if (pack && pack.folder?.id !== folder.id) {
-            await pack.configure({ folder: folder.id });
-        }
-    }
-});
-
-// --- HOOKS DE ESTRESSE E DESCANSO ---
 Hooks.on("preUpdateActor", (actor, changes, options, userId) => {
+    if (game.user.id !== userId || actor.type !== "character") return;
     if (options.stressSync || options.stressRest) return;
-    
-    // TRAVA PARA NPC: Ignora se não for personagem de jogador
-    if (actor.type !== "character") return;
 
     if (hasProperty(changes, "system.attributes.exhaustion")) {
-        const newEx = changes.system.attributes.exhaustion;
-        const oldEx = actor.system.attributes.exhaustion;
+        const newEx = getProperty(changes, "system.attributes.exhaustion");
+        const oldEx = actor.system.attributes.exhaustion || 0;
         const diff = newEx - oldEx;
         if (diff !== 0) {
             const currentStress = StressManager.getStress(actor);
-            let newStress = currentStress + (diff * STRESS_CONFIG.RATIO);
-            newStress = Math.clamped(newStress, 0, STRESS_CONFIG.MAX_STRESS);
+            const newStress = Math.clamped(currentStress + (diff * STRESS_CONFIG.RATIO), 0, STRESS_CONFIG.MAX_STRESS);
             foundry.utils.setProperty(changes, `flags.${STRESS_CONFIG.MODULE_ID}.${STRESS_CONFIG.FLAG_NAME}`, newStress);
         }
     }
 });
 
 Hooks.on("updateActor", async (actor, changes, options, userId) => {
-    if (!game.user.isGM && !actor.isOwner) return;
-    
-    // TRAVA PARA NPC: NPCs não geram card de colapso
-    if (actor.type !== "character") return;
-
-    const useAutoHp = game.settings.get(STRESS_CONFIG.MODULE_ID, "autoHpZero");
-    if (!useAutoHp) return;
+    if (game.user.id !== userId || actor.type !== "character") return;
+    if (!game.settings.get(STRESS_CONFIG.MODULE_ID, "autoHpZero")) return;
 
     if (changes.system?.attributes?.hp?.value === 0 && !options.isRestore) {
+        const amount = game.settings.get(STRESS_CONFIG.MODULE_ID, "stressOnZeroHp");
         const current = StressManager.getStress(actor);
-        const newStress = Math.clamped(current + 2, 0, STRESS_CONFIG.MAX_STRESS);
-        const newEx = Math.floor(newStress / STRESS_CONFIG.RATIO);
-        const updates = { [`flags.${STRESS_CONFIG.MODULE_ID}.${STRESS_CONFIG.FLAG_NAME}`]: newStress };
-        if (newEx !== actor.system.attributes.exhaustion) { updates["system.attributes.exhaustion"] = newEx; }
-        await actor.update(updates, { stressSync: true });
+        const newStress = Math.clamped(current + amount, 0, STRESS_CONFIG.MAX_STRESS);
+        const currentExhaustion = actor.system.attributes.exhaustion || 0;
+        const exhaustionGain = Math.floor(amount / STRESS_CONFIG.RATIO);
+        const newExhaustion = Math.min(currentExhaustion + exhaustionGain, 6);
+
+        await actor.update({
+            [`flags.${STRESS_CONFIG.MODULE_ID}.${STRESS_CONFIG.FLAG_NAME}`]: newStress,
+            "system.attributes.exhaustion": newExhaustion
+        }, { stressSync: true });
 
         const bannerImg = "systems/dnd5e/ui/official/banner-character-dark.webp";
         const content = `
@@ -107,44 +202,24 @@ Hooks.on("updateActor", async (actor, changes, options, userId) => {
             </div>
             <div style="padding:15px; text-align:center;">
                 <div style="font-family:'Modesto Condensed', serif; font-size:20px; color:#ecebdb; margin-bottom:10px;">${actor.name}</div>
-                <div style="background:rgba(80, 0, 0, 0.2); border:1px solid #7a0000; padding:10px; border-radius:3px;">
-                    <div style="font-size:12px; color:#aaa; margin-bottom:5px;">${game.i18n.localize("STRESS.Collapse.SubTitle")}</div>
-                    <div style="color:#ff5555; font-family:'Modesto Condensed', serif; font-size:22px; font-weight:bold; letter-spacing:1px; text-shadow:0 0 5px rgba(255,0,0,0.3);">${game.i18n.localize("STRESS.Collapse.Gain")}</div>
-                    ${newEx > actor.system.attributes.exhaustion ? `<div style="font-size:10px; color:#ff8888; margin-top:2px;">${game.i18n.localize("STRESS.Collapse.ExhaustionUp")}</div>` : ''}
+                <div style="background:rgba(80, 0, 0, 0.2); border:1px solid #7a0000; padding:10px; border-radius:3px; display:flex; justify-content:space-around;">
+                    <div style="color:#ff5555; font-family:'Modesto Condensed', serif; font-size:22px; font-weight:bold;">+${amount} ${game.i18n.localize("STRESS.Hud.Stress")}</div>
+                    <div style="color:#eebb23; font-family:'Modesto Condensed', serif; font-size:22px; font-weight:bold;">+${exhaustionGain} ${game.i18n.localize("STRESS.Hud.Exhaustion")}</div>
                 </div>
             </div>
         </div>`;
-        ChatMessage.create({ speaker: ChatMessage.getSpeaker({actor}), content: content });
+        ChatMessage.create({ speaker: ChatMessage.getSpeaker({actor}), content });
     }
 });
 
 Hooks.on("dnd5e.preLongRest", (actor, config) => {
-    if (actor.type !== "character") return true; // NPCs descansam normal pelo sistema base
-    if (config.stressRestModule) return true;
+    if (actor.type !== "character" || config.stressRestModule) return true;
     new StressRestDialog(actor).render(true);
     return false;
 });
 
 Hooks.on("dnd5e.preShortRest", (actor, config) => {
-    if (actor.type !== "character") return true;
-    if (config.stressRestModule) return true;
+    if (actor.type !== "character" || config.stressRestModule) return true;
     new StressShortRestDialog(actor).render(true);
     return false;
-});
-
-function checkAndActivate(item) {
-    if (!item || !item.actor || item.actor.type !== "character") return;
-
-    const isFlagged = item.getFlag("stresspoints-rest", "feature") === "no-limite";
-    const name = item.name.toLowerCase().trim();
-    const isNameMatch = name === "no limite" || name === "pushing limits" || name.includes("no limite") || name.includes("pushing limits");
-
-    if (isFlagged || isNameMatch) {
-        PushingLimitsDialog.activate(item);
-    }
-}
-
-Hooks.on("dnd5e.useItem", (item, config, options) => { checkAndActivate(item); });
-Hooks.on("dnd5e.postUseActivity", (activity, usage, results) => {
-    if (activity && activity.item) { checkAndActivate(activity.item); }
 });

@@ -11,11 +11,8 @@ export class StressManager {
     }
 
     static async setStress(actor, stress) {
-        // Bloqueia a execução se não for um Personagem Jogador (PJ)
         if (actor.type !== "character") return;
-
         const clampedStress = Math.clamped(stress, 0, STRESS_CONFIG.MAX_STRESS);
-        // Atualiza a flag. A exaustão é tratada no update geral ou manualmente onde chamado.
         await actor.setFlag(STRESS_CONFIG.MODULE_ID, STRESS_CONFIG.FLAG_NAME, clampedStress);
         return clampedStress;
     }

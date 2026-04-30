@@ -1,6 +1,6 @@
 # Stress Points & Rest (D&D 5e)
 
-![Foundry v13](https://img.shields.io/badge/Foundry-v13-orange)
+![Foundry v12](https://img.shields.io/badge/Foundry-v12-orange)
 ![System D&D5e](https://img.shields.io/badge/System-D%26D5e-blue)
 ![Language](https://img.shields.io/badge/Language-English%20%7C%20Português-green)
 
@@ -48,6 +48,12 @@ Consuming supplies is mandatory. Better quality food reduces Stress:
 | **Rare** | Removes **-2** Stress |
 | **Very Rare** | Removes **-3** Stress |
 | **Legendary** | Removes **-4** Stress |
+
+### 4. Pushing Limits
+A "Risk vs Reward" mechanic included in the compendium.
+* **Effect:** A character can accept physical toll to gain **Advantage** on a roll.
+* **Cost:** Immediately gain **1 Level of Exhaustion** (or equivalent Stress).
+* **Limit:** Can be used once per Long Rest.
 
 ---
 
@@ -98,4 +104,6 @@ You can customize the mechanics in **Configure Settings**:
 
 * **Author:** trizzfilgueira
 * **System:** Dungeons & Dragons 5th Edition (2024 ruleset adaptation).
+* **License:** MIT License.
+
 ---

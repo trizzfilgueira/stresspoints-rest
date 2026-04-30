@@ -1,8 +1,8 @@
 {
   "id": "stresspoints-rest",
   "title": "Stress Points & Rest",
-  "version": "1.0.1",
-  "description": "Customized Stress and Rest System for D&D 2024",
+  "version": "2.0.0",
+  "description": "Customized Stress and Rest System for D&D 2024 (v13 & v14 Compatible)",
   "authors": [
     {
       "name": "Trizzfilgueira",
@@ -11,8 +11,9 @@
     }
   ],
   "compatibility": {
-    "minimum": "12",
-    "verified": "13"
+    "minimum": "13",
+    "verified": "14",
+    "maximum": "14"
   },
   "relationships": {
     "systems": [
@@ -20,7 +21,7 @@
         "id": "dnd5e",
         "type": "system",
         "compatibility": {
-          "minimum": "3.0.0",
+          "minimum": "3.3.0",
           "verified": "4.0.0"
         }
       }
@@ -59,7 +60,7 @@
       "type": "Macro",
       "system": "dnd5e"
     }
-],
+  ],
   "url": "https://github.com/trizzfilgueira/stresspoints-rest",
   "manifest": "https://raw.githubusercontent.com/trizzfilgueira/stresspoints-rest/main/module.json",
   "download": "https://github.com/trizzfilgueira/stresspoints-rest/archive/refs/heads/main.zip",
@@ -67,4 +68,3 @@
     "canUpload": true
   }
 }
-

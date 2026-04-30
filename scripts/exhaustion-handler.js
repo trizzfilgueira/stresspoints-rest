@@ -1,23 +1,20 @@
-const STRESS_BANNER = "systems/dnd5e/ui/official/banner-character-dark.webp";
-
 export class ExhaustionHandler {
-    
+
     static init() {
         Hooks.on("preUpdateActor", (actor, changes, options, userId) => {
-            // TRAVA PARA NPC: Não manda card de exaustão para monstros
+            if (game.user.id !== userId) return;
             if (actor.type !== "character") return;
 
             const newEx = foundry.utils.getProperty(changes, "system.attributes.exhaustion");
             if (newEx === undefined || newEx === null) return;
 
             const oldEx = actor.system.attributes.exhaustion || 0;
-
             if (newEx > oldEx && newEx >= 1 && newEx <= 6) {
                 ExhaustionHandler.createCard(actor, newEx);
             }
         });
-        
-        console.log("Stress Module | Monitor de Exaustão Ativo.");
+
+        console.log("Stress Points & Rest | Monitor de Exaustão Ativo.");
     }
 
     static getFlavor(level) {
