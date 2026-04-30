@@ -86,7 +86,7 @@ The module comes with two Compendiums to help you get started:
 ### 2. Resting
 Simply click the standard **Short Rest** or **Long Rest** button on the D&D 5e character sheet.
 * **Short Rest:** A dialog will ask for a Healer's Kit or Bandage.
-* **Long Rest:** A dialog will ask for Food, Drink, and Camping Gear, showing the current Environment DC. Supplies can be taken from inventory or purchased externally if the GM has enabled that option.
+* **Long Rest:** A dialog will ask for Food, Drink, Healer's Kit, and the current Environment. Supplies can be taken from inventory or purchased externally if the GM has enabled that option.
 
 ### 3. Tracking Stress
 You don't need to do anything manually. The module automatically adds a tracker. If a player takes Exhaustion via the standard sheet, the Stress updates automatically (and vice-versa).
