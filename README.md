@@ -2,7 +2,7 @@
 
 ![Foundry v13](https://img.shields.io/badge/Foundry-v13-orange)
 ![Foundry v14](https://img.shields.io/badge/Foundry-v14-orange)
-![System D&D5e](https://img.shields.io/badge/System-D%26D5e-blue)
+![System D&D5.5e](https://img.shields.io/badge/System-D%26D5.5e-blue)
 ![Language](https://img.shields.io/badge/Language-English%20%7C%20Português-green)
 
 **Stress and Rest Points** is a Foundry VTT module for D&D 5.5e that introduces a **Stress System** to bridge the gap between full health and exhaustion. It completely overhauls the **Short and Long Rest** interface, transforming rest into a resource management system involving Food, Drink, Comfort and Medical Supplies.
