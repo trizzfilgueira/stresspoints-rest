@@ -1,0 +1,46 @@
+<form class="stress-rest-form" autocomplete="off">
+    <div class="vault-banner-container">
+        <div class="vault-banner-img"></div>
+        <div class="vault-title">{{localize "STRESS.PushingLimits.Title"}}</div>
+    </div>
+
+    <div class="vault-body">
+        <p class="pl-desc">{{localize "STRESS.PushingLimits.Prompt"}}</p>
+
+        <input type="hidden" name="choice" id="input-choice" value="advantage">
+        <input type="hidden" name="slotLevel" id="input-slotLevel" value="{{firstLevel}}">
+
+        <div class="category-section">
+            <div class="inventory-grid pl-choice-grid">
+                <div class="item-slot pl-choice selected" data-choice="advantage">
+                    <div class="slot-icon-container"><i class="fas fa-dice-d20"></i></div>
+                    <div class="slot-name">{{localize "STRESS.PushingLimits.Advantage"}}</div>
+                    <div class="pl-cost">+1 {{localize "STRESS.Hud.Exhaustion"}}</div>
+                </div>
+                {{#if spellLevels.length}}
+                <div class="item-slot pl-choice" data-choice="slot">
+                    <div class="slot-icon-container"><i class="fas fa-hat-wizard"></i></div>
+                    <div class="slot-name">{{localize "STRESS.PushingLimits.RecoverSlot"}}</div>
+                    <div class="pl-cost" id="pl-slot-cost">+{{firstCost}} {{localize "STRESS.Hud.Exhaustion"}}</div>
+                </div>
+                {{/if}}
+            </div>
+        </div>
+
+        {{#if spellLevels.length}}
+        <div class="category-section" id="pl-slot-section" style="display:none;">
+            <div class="category-header"><i class="fas fa-hat-wizard"></i> {{localize "STRESS.PushingLimits.SlotLevel"}}</div>
+            <div class="custom-select-wrapper">
+                <div class="custom-select-trigger"><span>{{firstLabel}}</span></div>
+                <div class="custom-options">
+                    {{#each spellLevels}}
+                    <span class="custom-option {{#if @first}}selected{{/if}}" data-value="{{this.level}}" data-cost="{{this.cost}}">{{this.label}}</span>
+                    {{/each}}
+                </div>
+            </div>
+        </div>
+        {{/if}}
+
+        <button type="submit" class="btn-gold"><i class="fas fa-fist-raised"></i> {{localize "STRESS.PushingLimits.Confirm"}}</button>
+    </div>
+</form>

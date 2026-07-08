@@ -351,7 +351,62 @@
 }
 
 .btn-gold:hover {
-    background: linear-gradient(to bottom, #a39b80, #726b55); 
+    background: linear-gradient(to bottom, #a39b80, #726b55);
     border-color: #e0d8c3;
     box-shadow: 0 0 20px rgba(194, 181, 155, 0.6);
+}
+
+.pl-desc {
+    font-size: 13px;
+    color: #aaa;
+    font-style: italic;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.pl-choice-grid {
+    overflow-x: visible;
+}
+
+.pl-choice {
+    flex: 1;
+    min-width: 0;
+    padding: 16px 8px;
+    text-align: center;
+}
+
+.pl-choice .slot-icon-container {
+    width: auto;
+    height: auto;
+    margin-bottom: 10px;
+}
+
+.pl-choice .slot-icon-container i {
+    font-size: 30px;
+    color: #9f9275;
+    filter: drop-shadow(0 0 6px rgba(0,0,0,0.6));
+    transition: color 0.2s;
+}
+
+.pl-choice.selected .slot-icon-container i {
+    color: #eebb23;
+    text-shadow: 0 0 10px rgba(238, 187, 35, 0.5);
+}
+
+.pl-choice .slot-name {
+    font-family: "Modesto Condensed", serif;
+    font-size: 15px;
+    letter-spacing: 0.5px;
+    color: #ecebdb;
+    text-transform: uppercase;
+    height: auto;
+    -webkit-line-clamp: unset;
+    margin-bottom: 6px;
+}
+
+.pl-cost {
+    font-size: 11px;
+    color: #ff6b6b;
+    font-weight: bold;
+    letter-spacing: 0.5px;
 }

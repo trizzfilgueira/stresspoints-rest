@@ -2,6 +2,7 @@ import { StressManager, STRESS_CONFIG } from "./stress-manager.js";
 import { StressRestDialog } from "./rest-dialog.js";
 import { StressShortRestDialog } from "./short-rest-dialog.js";
 import { ExhaustionHandler } from "./exhaustion-handler.js";
+import { PushingLimitsDialog } from "./pushing-limits.js";
 
 Hooks.once("init", () => {
     console.log("Stress Points & Rest | Inicializando...");
@@ -158,19 +159,47 @@ Hooks.once("init", () => {
     STRESS_CONFIG.RATIO = game.settings.get(STRESS_CONFIG.MODULE_ID, "stressRatio");
 
     ExhaustionHandler.init();
+    PushingLimitsDialog.init();
+});
+
+Hooks.once("ready", async () => {
+    if (!game.user.isGM) return;
+
+    const pack = game.packs.get(`${STRESS_CONFIG.MODULE_ID}.stress-macros`);
+    if (!pack) return;
+
+    try {
+        const index = await pack.getIndex();
+        const entry = index.find(i => i.name?.includes("GM Stress Panel"));
+        if (!entry) return;
+
+        const macro = await pack.getDocument(entry._id);
+        if (!macro.command?.includes("Math.clamped")) return;
+
+        const wasLocked = pack.locked;
+        if (wasLocked) await pack.configure({ locked: false });
+        try {
+            await macro.update({ command: macro.command.replaceAll("Math.clamped", "Math.clamp") });
+            console.log("Stress Points & Rest | Updated 'GM Stress Panel' macro to use Math.clamp.");
+        } finally {
+            if (wasLocked) await pack.configure({ locked: true });
+        }
+    } catch (err) {
+        console.error("Stress Points & Rest | Failed to update 'GM Stress Panel' macro:", err);
+    }
 });
 
 Hooks.on("preUpdateActor", (actor, changes, options, userId) => {
     if (game.user.id !== userId || actor.type !== "character") return;
     if (options.stressSync || options.stressRest) return;
 
-    if (hasProperty(changes, "system.attributes.exhaustion")) {
-        const newEx = getProperty(changes, "system.attributes.exhaustion");
+    if (foundry.utils.hasProperty(changes, "system.attributes.exhaustion")) {
+        const newEx = foundry.utils.getProperty(changes, "system.attributes.exhaustion");
         const oldEx = actor.system.attributes.exhaustion || 0;
         const diff = newEx - oldEx;
         if (diff !== 0) {
             const currentStress = StressManager.getStress(actor);
-            const newStress = Math.clamped(currentStress + (diff * STRESS_CONFIG.RATIO), 0, STRESS_CONFIG.MAX_STRESS);
+            const newStress = Math.clamp(currentStress + (diff * STRESS_CONFIG.RATIO), 0, STRESS_CONFIG.MAX_STRESS);
             foundry.utils.setProperty(changes, `flags.${STRESS_CONFIG.MODULE_ID}.${STRESS_CONFIG.FLAG_NAME}`, newStress);
         }
     }
@@ -183,7 +212,7 @@ Hooks.on("updateActor", async (actor, changes, options, userId) => {
     if (changes.system?.attributes?.hp?.value === 0 && !options.isRestore) {
         const amount = game.settings.get(STRESS_CONFIG.MODULE_ID, "stressOnZeroHp");
         const current = StressManager.getStress(actor);
-        const newStress = Math.clamped(current + amount, 0, STRESS_CONFIG.MAX_STRESS);
+        const newStress = Math.clamp(current + amount, 0, STRESS_CONFIG.MAX_STRESS);
         const currentExhaustion = actor.system.attributes.exhaustion || 0;
         const exhaustionGain = Math.floor(amount / STRESS_CONFIG.RATIO);
         const newExhaustion = Math.min(currentExhaustion + exhaustionGain, 6);

@@ -124,5 +124,20 @@
   "STRESS.Panel.StressLevel": "NÍVEL DE ESTRESSE",
   "STRESS.Panel.StressLabel": "Estresse",
   "STRESS.Panel.SendReport": "Enviar Relatório ao Chat",
-  "STRESS.Report.BandageEffect": "Bandagem: Recuperou 50% do PV ({val})"
+  "STRESS.Report.BandageEffect": "Bandagem: Recuperou 50% do PV ({val})",
+
+  "STRESS.Feature.CostLabel": "CUSTO",
+  "STRESS.PushingLimits.Title": "Levar ao Limite",
+  "STRESS.PushingLimits.ItemDescription": "Force seu corpo além dos limites, ganhando uma vantagem em troca de Exaustão. Escolha entre ganhar Vantagem na próxima rolagem ou recuperar um espaço de magia gasto (até o nível 5) na força de vontade, custando Exaustão igual ao nível do espaço.",
+  "STRESS.PushingLimits.Prompt": "Escolha como se levar ao limite:",
+  "STRESS.PushingLimits.SlotLevel": "Nível do Espaço de Magia",
+  "STRESS.PushingLimits.SlotOption": "Nível {level}",
+  "STRESS.PushingLimits.Advantage": "Ganhar Vantagem",
+  "STRESS.PushingLimits.RecoverSlot": "Recuperar Espaço de Magia",
+  "STRESS.PushingLimits.AdvantageDesc": "{name} força os limites do próprio corpo e encontra uma brecha.",
+  "STRESS.PushingLimits.SlotDesc": "{name} força os limites e arranca de si mesmo um último fio de magia.",
+  "STRESS.PushingLimits.NoSlots": "Nenhum espaço de magia disponível para recuperar.",
+  "STRESS.PushingLimits.NoSlotAvailable": "Esse espaço de magia já está cheio.",
+  "STRESS.PushingLimits.Confirm": "Levar ao Limite",
+  "STRESS.PushingLimits.AdvantageEffectName": "Levar ao Limite: Vantagem"
 }

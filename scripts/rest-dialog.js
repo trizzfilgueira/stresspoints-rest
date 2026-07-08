@@ -13,7 +13,7 @@ export class StressRestDialog extends FormApplication {
     constructor(actor) { super(); this.actor = actor; }
 
     static get defaultOptions() {
-        return mergeObject(super.defaultOptions, {
+        return foundry.utils.mergeObject(super.defaultOptions, {
             id: "stress-long-rest",
             template: "modules/stresspoints-rest/templates/long-rest.hbs",
             title: game.i18n.localize("STRESS.Dialog.LongRest"),
@@ -92,13 +92,21 @@ export class StressRestDialog extends FormApplication {
     }
 
     async _rollConSave(dc, flavorText) {
-        const options = { fastForward: false, chatMessage: true, flavor: `${flavorText} -> <b>CD ${dc}</b>` };
-        const result = await this.actor.rollSavingThrow({ ability: "con" }, options);
+        const result = await this.actor.rollSavingThrow(
+            { ability: "con" },
+            {},
+            { data: { flavor: `${flavorText} -> <b>CD ${dc}</b>` } }
+        );
         const roll = Array.isArray(result) ? result[0] : result;
         return { success: roll.total >= dc, total: roll.total };
     }
 
     async _updateObject(event, formData) {
+        // Grab anything that depends on the still-rendered form before closing the window right away —
+        // the rest of the processing (rolls, longRest, chat report) continues in the background afterward.
+        const envLabel = this.element.find('.custom-option.selected').text();
+        this.close();
+
         let modifiers = 0;
         let logs = [];
         let usedHeal = false;
@@ -145,6 +153,14 @@ export class StressRestDialog extends FormApplication {
                     logs.push(`🍴 ${game.i18n.localize("STRESS.Msg.EatSuccess")}: ${item.name}${bonusText}`);
                     modifiers -= bonus;
                 }
+            } else if (game.settings.get(mid, "foodMode") === "roll") {
+                const check = await this._rollConSave(10, game.i18n.localize("STRESS.Labels.FoodCheck"));
+                if (check.success) {
+                    logs.push(`🍴 ${game.i18n.localize("STRESS.Msg.Saved")}`);
+                } else {
+                    modifiers += 1;
+                    logs.push(`🍴 ${game.i18n.localize("STRESS.Msg.FailStress")}`);
+                }
             } else {
                 modifiers += 1;
                 logs.push(`🍴 ${game.i18n.localize("STRESS.Report.NoFood")}`);
@@ -172,6 +188,14 @@ export class StressRestDialog extends FormApplication {
                     logs.push(`🥤 ${game.i18n.localize("STRESS.Msg.DrinkSuccess")}: ${item.name}${bonusText}`);
                     modifiers -= bonus;
                 }
+            } else if (game.settings.get(mid, "drinkMode") === "roll") {
+                const check = await this._rollConSave(10, game.i18n.localize("STRESS.Labels.DrinkCheck"));
+                if (check.success) {
+                    logs.push(`🥤 ${game.i18n.localize("STRESS.Msg.Saved")}`);
+                } else {
+                    modifiers += 1;
+                    logs.push(`🥤 ${game.i18n.localize("STRESS.Msg.FailStress")}`);
+                }
             } else {
                 modifiers += 1;
                 logs.push(`🥤 ${game.i18n.localize("STRESS.Report.NoDrink")}`);
@@ -179,10 +203,9 @@ export class StressRestDialog extends FormApplication {
         }
 
         if (game.settings.get(mid, "environmentMode")) {
-            const envLabel = this.element.find('.custom-option.selected').text();
             if (formData.environment > 0) {
-                const hasTent = actor.items.some(i => i.name.toLowerCase().match(/tent|barraca/));
-                const hasBedroll = actor.items.some(i => i.name.toLowerCase().match(/bedroll|saco de dormir/));
+                const hasTent = actor.items.some(i => i.name.toLowerCase().match(/\btent\b|\bbarraca\b/));
+                const hasBedroll = actor.items.some(i => i.name.toLowerCase().match(/\bbedroll\b|\bsaco de dormir\b/));
 
                 let envBonus = 0;
                 if (hasTent) { envBonus += 4; logs.push(`⛺ <b>${game.i18n.localize("STRESS.Item.Tent")}:</b> -4 CD`); }
@@ -199,7 +222,7 @@ export class StressRestDialog extends FormApplication {
         }
 
         if (game.settings.get(mid, "requireHealerKitLong")) {
-            if (formData.healId && (await ItemHandler.consume(actor, formData.healId))) {
+            if (formData.healId && (await ItemHandler.consume(actor, formData.healId, { silent: false }))) {
                 usedHeal = true;
                 logs.push(`💊 ${game.i18n.localize("STRESS.Report.UsedItem")}`);
             } else {
@@ -219,7 +242,7 @@ export class StressRestDialog extends FormApplication {
         }
 
         const baseRecovery = -2;
-        const finalStress = Math.clamped(stressStart + baseRecovery + modifiers, 0, STRESS_CONFIG.MAX_STRESS);
+        const finalStress = Math.clamp(stressStart + baseRecovery + modifiers, 0, STRESS_CONFIG.MAX_STRESS);
 
         await actor.update({
             [`flags.${mid}.${STRESS_CONFIG.FLAG_NAME}`]: finalStress,

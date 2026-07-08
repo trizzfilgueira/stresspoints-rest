@@ -12,7 +12,7 @@ export class StressManager {
 
     static async setStress(actor, stress) {
         if (actor.type !== "character") return;
-        const clampedStress = Math.clamped(stress, 0, STRESS_CONFIG.MAX_STRESS);
+        const clampedStress = Math.clamp(stress, 0, STRESS_CONFIG.MAX_STRESS);
         await actor.setFlag(STRESS_CONFIG.MODULE_ID, STRESS_CONFIG.FLAG_NAME, clampedStress);
         return clampedStress;
     }

@@ -8,7 +8,7 @@ export class StressShortRestDialog extends FormApplication {
     }
 
     static get defaultOptions() {
-        return mergeObject(super.defaultOptions, {
+        return foundry.utils.mergeObject(super.defaultOptions, {
             id: "stress-short-rest",
             template: "modules/stresspoints-rest/templates/short-rest.hbs",
             title: game.i18n.localize("STRESS.Dialog.ShortRest"),
@@ -35,9 +35,11 @@ export class StressShortRestDialog extends FormApplication {
         data.requireHealer = game.settings.get(mid, "requireHealerKitShort");
 
         data.healItems = this.actor.items.filter(i =>
-            i.system.type?.value === "potion" ||
-            i.name.toLowerCase().match(/kit|curandeiro|healer/) ||
-            i.name.toLowerCase().match(/bandage|atadura|bandagem/)
+            i.type === "consumable" && (
+                i.system.type?.value === "potion" ||
+                i.name.toLowerCase().match(/kit|curandeiro|healer/) ||
+                i.name.toLowerCase().match(/bandage|atadura|bandagem/)
+            )
         );
 
         return data;
@@ -61,7 +63,7 @@ export class StressShortRestDialog extends FormApplication {
         const requireHealer = game.settings.get(mid, "requireHealerKitShort");
 
         if (formData.healId) {
-            const item = await ItemHandler.consume(this.actor, formData.healId);
+            const item = await ItemHandler.consume(this.actor, formData.healId, { silent: false });
             if (item) {
                 usedHealerItem = true;
                 logs.push(`🩹 ${game.i18n.localize("STRESS.Report.UsedItem")}: <b>${item.name}</b>`);

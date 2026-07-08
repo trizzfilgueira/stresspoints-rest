@@ -124,5 +124,20 @@
   "STRESS.Panel.StressLevel": "STRESS LEVEL",
   "STRESS.Panel.StressLabel": "Stress",
   "STRESS.Panel.SendReport": "Send Report to Chat",
-  "STRESS.Report.BandageEffect": "Bandage: Recovered 50% HP ({val})"
+  "STRESS.Report.BandageEffect": "Bandage: Recovered 50% HP ({val})",
+
+  "STRESS.Feature.CostLabel": "COST",
+  "STRESS.PushingLimits.Title": "Pushing Limits",
+  "STRESS.PushingLimits.ItemDescription": "Push your body past its limits, gaining an edge in exchange for Exhaustion. Choose to gain Advantage on your next roll, or force a spent spell slot (up to level 5) back through sheer will, costing Exhaustion equal to the slot's level.",
+  "STRESS.PushingLimits.Prompt": "Choose how to push yourself:",
+  "STRESS.PushingLimits.SlotLevel": "Spell Slot Level",
+  "STRESS.PushingLimits.SlotOption": "Level {level}",
+  "STRESS.PushingLimits.Advantage": "Gain Advantage",
+  "STRESS.PushingLimits.RecoverSlot": "Recover Spell Slot",
+  "STRESS.PushingLimits.AdvantageDesc": "{name} pushes the limits of their own body and finds an opening.",
+  "STRESS.PushingLimits.SlotDesc": "{name} pushes the limits and tears out one last thread of magic from within.",
+  "STRESS.PushingLimits.NoSlots": "No available spell slots to recover.",
+  "STRESS.PushingLimits.NoSlotAvailable": "That spell slot is already full.",
+  "STRESS.PushingLimits.Confirm": "Push Yourself",
+  "STRESS.PushingLimits.AdvantageEffectName": "Pushing Limits: Advantage"
 }
