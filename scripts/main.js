@@ -174,13 +174,28 @@ Hooks.once("ready", async () => {
         if (!entry) return;
 
         const macro = await pack.getDocument(entry._id);
-        if (!macro.command?.includes("Math.clamped")) return;
+        let command = macro.command;
+        let changed = false;
+
+        if (command?.includes("Math.clamped")) {
+            command = command.replaceAll("Math.clamped", "Math.clamp");
+            changed = true;
+        }
+
+        // Only "character" actors have the hp/attributes shape this panel expects — a player-owned
+        // vehicle, group, or NPC actor would otherwise crash the whole panel.
+        if (command?.includes("a.hasPlayerOwner)")) {
+            command = command.replaceAll("a.hasPlayerOwner)", 'a.hasPlayerOwner && a.type === "character")');
+            changed = true;
+        }
+
+        if (!changed) return;
 
         const wasLocked = pack.locked;
         if (wasLocked) await pack.configure({ locked: false });
         try {
-            await macro.update({ command: macro.command.replaceAll("Math.clamped", "Math.clamp") });
-            console.log("Stress Points & Rest | Updated 'GM Stress Panel' macro to use Math.clamp.");
+            await macro.update({ command });
+            console.log("Stress Points & Rest | Updated 'GM Stress Panel' macro (Math.clamp, character-only filter).");
         } finally {
             if (wasLocked) await pack.configure({ locked: true });
         }
