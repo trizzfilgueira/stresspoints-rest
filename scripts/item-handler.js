@@ -127,7 +127,7 @@ export class ItemHandler {
         }
 
         // Food, drink and bandages are used silently; potions keep their card for the heal roll.
-        // A consumption target pointing at an item the actor lacks makes dnd5e abort the use.
+        // dnd5e aborts the use when a consumption target is an item the actor lacks, or one without charges.
         // Skip dnd5e's consumption then; the check below spends one unit instead.
         const config = ItemHandler.#hasMissingTarget(item) ? { consume: false } : {};
         const before = ItemHandler.#spendState(item);
@@ -136,6 +136,7 @@ export class ItemHandler {
         // An activity that consumes nothing would make the meal free.
         const live = actor.items.get(item.id);
         if (live && ItemHandler.#spendState(live) === before) await ItemHandler.#spendOne(live);
+        else if (live && !ItemHandler.#uses(live).max && (live.system.quantity || 0) <= 0) await live.delete();
         return item;
     }
 
@@ -145,8 +146,12 @@ export class ItemHandler {
     }
 
     static #hasMissingTarget(item) {
-        return item.system.activities.some(activity => activity.consumption?.targets?.some(t =>
-            (t.type === "material" || (t.type === "itemUses" && t.target)) && !item.actor.items.get(t.target)));
+        return item.system.activities.some(activity => activity.consumption?.targets?.some(t => {
+            if (t.type === "material") return !item.actor.items.get(t.target);
+            if (t.type !== "itemUses") return false;
+            const target = t.target ? item.actor.items.get(t.target) : item;
+            return !target || !(ItemHandler.#uses(target).max > 0);
+        }));
     }
 
     static #spendState(item) {
@@ -165,8 +170,8 @@ export class ItemHandler {
             return item.delete();
         }
 
+        // Without charges there is nothing left to keep once the last unit is gone.
         if (qty > 1) return item.update({ "system.quantity": qty - 1 });
-        if (autoDestroy) return item.delete();
-        return item.update({ "system.quantity": 0 });
+        return item.delete();
     }
 }

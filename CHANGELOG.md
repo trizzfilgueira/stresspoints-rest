@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.2.2
+
+### Fixes
+- Items without charges are removed when their last unit is used, instead of staying in the inventory at quantity 0.
+- Food, drink or healing items whose activity spends charges they do not have are now used normally instead of being refused by dnd5e.
+
 ## 2.2.1
 
 ### Fixes
