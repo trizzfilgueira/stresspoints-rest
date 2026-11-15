@@ -3,9 +3,14 @@ import { StressRestDialog } from "./rest-dialog.js";
 import { StressShortRestDialog } from "./short-rest-dialog.js";
 import { ExhaustionHandler } from "./exhaustion-handler.js";
 import { PushingLimitsDialog } from "./pushing-limits.js";
+import { postStressCard } from "./chat-card.js";
+import { StressGMPanel, onCampEnvironmentChange } from "./gm-panel.js";
+import { SheetIntegration } from "./sheet-integration.js";
+import { groupSettings } from "./settings-sections.js";
+import { CAMP_SETTING, GM_ENV_SETTING, setCampEnvironment, setActorEnvironment, actorEnvironment } from "./environment.js";
 
 Hooks.once("init", () => {
-    console.log("Stress Points & Rest | Inicializando...");
+    console.log("Stress Points & Rest | Initializing");
 
     game.settings.register(STRESS_CONFIG.MODULE_ID, "maxStress", {
         name: "STRESS.Settings.MaxStress.Name",
@@ -13,6 +18,7 @@ Hooks.once("init", () => {
         scope: "world",
         config: true,
         type: Number,
+        range: { min: 1, max: 60, step: 1 },
         default: 12,
         onChange: value => { STRESS_CONFIG.MAX_STRESS = value; }
     });
@@ -23,6 +29,7 @@ Hooks.once("init", () => {
         scope: "world",
         config: true,
         type: Number,
+        range: { min: 1, max: 10, step: 1 },
         default: 2,
         onChange: value => { STRESS_CONFIG.RATIO = value; }
     });
@@ -33,6 +40,7 @@ Hooks.once("init", () => {
         scope: "world",
         config: true,
         type: Number,
+        range: { min: 0, max: 12, step: 1 },
         default: 2
     });
 
@@ -48,6 +56,15 @@ Hooks.once("init", () => {
     game.settings.register(STRESS_CONFIG.MODULE_ID, "requireHealerKitLong", {
         name: "STRESS.Settings.HealerLong.Name",
         hint: "STRESS.Settings.HealerLong.Hint",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: true
+    });
+
+    game.settings.register(STRESS_CONFIG.MODULE_ID, "longRestNeedsHp", {
+        name: "STRESS.Settings.LongRestHp.Name",
+        hint: "STRESS.Settings.LongRestHp.Hint",
         scope: "world",
         config: true,
         type: Boolean,
@@ -123,6 +140,25 @@ Hooks.once("init", () => {
         default: true
     });
 
+    game.settings.register(STRESS_CONFIG.MODULE_ID, GM_ENV_SETTING, {
+        name: "STRESS.Settings.GmEnv.Name",
+        hint: "STRESS.Settings.GmEnv.Hint",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: true,
+        onChange: () => onCampEnvironmentChange()
+    });
+
+    // Party camp DC, set in the GM panel.
+    game.settings.register(STRESS_CONFIG.MODULE_ID, CAMP_SETTING, {
+        scope: "world",
+        config: false,
+        type: Number,
+        default: 0,
+        onChange: () => onCampEnvironmentChange()
+    });
+
     game.settings.register(STRESS_CONFIG.MODULE_ID, "maxFoodRarity", {
         name: "STRESS.Settings.MaxFoodRarity.Name",
         hint: "STRESS.Settings.MaxFoodRarity.Hint",
@@ -158,63 +194,48 @@ Hooks.once("init", () => {
     STRESS_CONFIG.MAX_STRESS = game.settings.get(STRESS_CONFIG.MODULE_ID, "maxStress");
     STRESS_CONFIG.RATIO = game.settings.get(STRESS_CONFIG.MODULE_ID, "stressRatio");
 
+    StressManager.initHooks();
     ExhaustionHandler.init();
     PushingLimitsDialog.init();
+    StressRestDialog.init();
+    StressShortRestDialog.init();
+    StressGMPanel.init();
+    SheetIntegration.init();
+
+    // Public API for macros and other modules.
+    game.modules.get(STRESS_CONFIG.MODULE_ID).api = {
+        openGMPanel: () => StressGMPanel.open(),
+        getStress: actor => StressManager.getStress(actor),
+        setStress: (actor, value) => StressManager.setStress(actor, value),
+        applyStress: (actor, delta) => StressManager.applyStress(actor, delta),
+        setCampEnvironment,
+        setActorEnvironment,
+        getActorEnvironment: actor => actorEnvironment(actor),
+        getExhaustionFor: stress => StressManager.exhaustionFor(stress),
+        get maxStress() { return StressManager.maxStress; },
+        get ratio() { return StressManager.ratio; },
+        HOOK_STRESS_CHANGED: `${STRESS_CONFIG.MODULE_ID}.stressChanged`
+    };
 });
 
-Hooks.once("ready", async () => {
-    if (!game.user.isGM) return;
+Hooks.on("renderSettingsConfig", groupSettings);
 
-    const pack = game.packs.get(`${STRESS_CONFIG.MODULE_ID}.stress-macros`);
-    if (!pack) return;
-
-    try {
-        const index = await pack.getIndex();
-        const entry = index.find(i => i.name?.includes("GM Stress Panel"));
-        if (!entry) return;
-
-        const macro = await pack.getDocument(entry._id);
-        let command = macro.command;
-        let changed = false;
-
-        if (command?.includes("Math.clamped")) {
-            command = command.replaceAll("Math.clamped", "Math.clamp");
-            changed = true;
-        }
-
-        // Only "character" actors have the hp/attributes shape this panel expects — a player-owned
-        // vehicle, group, or NPC actor would otherwise crash the whole panel.
-        if (command?.includes("a.hasPlayerOwner)")) {
-            command = command.replaceAll("a.hasPlayerOwner)", 'a.hasPlayerOwner && a.type === "character")');
-            changed = true;
-        }
-
-        if (!changed) return;
-
-        const wasLocked = pack.locked;
-        if (wasLocked) await pack.configure({ locked: false });
-        try {
-            await macro.update({ command });
-            console.log("Stress Points & Rest | Updated 'GM Stress Panel' macro (Math.clamp, character-only filter).");
-        } finally {
-            if (wasLocked) await pack.configure({ locked: true });
-        }
-    } catch (err) {
-        console.error("Stress Points & Rest | Failed to update 'GM Stress Panel' macro:", err);
-    }
+// Automated tests, only when the Quench module is active.
+Hooks.once("quenchReady", async quench => {
+    const { registerQuenchTests } = await import("./tests/quench-tests.js");
+    registerQuenchTests(quench);
 });
 
 Hooks.on("preUpdateActor", (actor, changes, options, userId) => {
     if (game.user.id !== userId || actor.type !== "character") return;
-    if (options.stressSync || options.stressRest) return;
+    if (options.stressSync || options.stressRest || options.isRest) return;
 
+    // A manual exhaustion change (sheet, condition toggle, other module) moves stress along with it.
     if (foundry.utils.hasProperty(changes, "system.attributes.exhaustion")) {
-        const newEx = foundry.utils.getProperty(changes, "system.attributes.exhaustion");
-        const oldEx = actor.system.attributes.exhaustion || 0;
-        const diff = newEx - oldEx;
+        const newEx = Number(foundry.utils.getProperty(changes, "system.attributes.exhaustion")) || 0;
+        const diff = newEx - StressManager.getExhaustion(actor);
         if (diff !== 0) {
-            const currentStress = StressManager.getStress(actor);
-            const newStress = Math.clamp(currentStress + (diff * STRESS_CONFIG.RATIO), 0, STRESS_CONFIG.MAX_STRESS);
+            const newStress = StressManager.clampStress(StressManager.getStress(actor) + (diff * StressManager.ratio));
             foundry.utils.setProperty(changes, `flags.${STRESS_CONFIG.MODULE_ID}.${STRESS_CONFIG.FLAG_NAME}`, newStress);
         }
     }
@@ -223,47 +244,38 @@ Hooks.on("preUpdateActor", (actor, changes, options, userId) => {
 Hooks.on("updateActor", async (actor, changes, options, userId) => {
     if (game.user.id !== userId || actor.type !== "character") return;
     if (!game.settings.get(STRESS_CONFIG.MODULE_ID, "autoHpZero")) return;
+    // Updates made by rests or by this module (e.g. reverting HP) are not a collapse.
+    if (options.isRest || options.stressRest || options.stressSync || options.isRestore) return;
+    if (foundry.utils.getProperty(changes, "system.attributes.hp.value") !== 0) return;
 
-    if (changes.system?.attributes?.hp?.value === 0 && !options.isRestore) {
-        const amount = game.settings.get(STRESS_CONFIG.MODULE_ID, "stressOnZeroHp");
-        const current = StressManager.getStress(actor);
-        const newStress = Math.clamp(current + amount, 0, STRESS_CONFIG.MAX_STRESS);
-        const currentExhaustion = actor.system.attributes.exhaustion || 0;
-        const exhaustionGain = Math.floor(amount / STRESS_CONFIG.RATIO);
-        const newExhaustion = Math.min(currentExhaustion + exhaustionGain, 6);
+    const amount = game.settings.get(STRESS_CONFIG.MODULE_ID, "stressOnZeroHp");
+    if (!amount) return;
+    const { stressGain, exhaustionGain } = await StressManager.applyStress(actor, amount);
 
-        await actor.update({
-            [`flags.${STRESS_CONFIG.MODULE_ID}.${STRESS_CONFIG.FLAG_NAME}`]: newStress,
-            "system.attributes.exhaustion": newExhaustion
-        }, { stressSync: true });
-
-        const bannerImg = "systems/dnd5e/ui/official/banner-character-dark.webp";
-        const content = `
-        <div style="background:#111215; border:1px solid #000; color:#cfcdc2; font-family:'Signika', sans-serif; margin-top:5px;">
-            <div style="position:relative; height:60px; overflow:hidden; border-bottom:1px solid #333;">
-                <div style="position:absolute; width:100%; height:100%; background:url('${bannerImg}') top center/cover; opacity:0.5;"></div>
-                <h3 style="position:relative; z-index:2; text-align:center; margin:0; padding-top:18px; color:#ff5555; font-family:'Modesto Condensed', serif; font-size:24px; text-shadow:0 0 5px black; text-transform:uppercase;">${game.i18n.localize("STRESS.Collapse.Title")}</h3>
-            </div>
-            <div style="padding:15px; text-align:center;">
-                <div style="font-family:'Modesto Condensed', serif; font-size:20px; color:#ecebdb; margin-bottom:10px;">${actor.name}</div>
-                <div style="background:rgba(80, 0, 0, 0.2); border:1px solid #7a0000; padding:10px; border-radius:3px; display:flex; justify-content:space-around;">
-                    <div style="color:#ff5555; font-family:'Modesto Condensed', serif; font-size:22px; font-weight:bold;">+${amount} ${game.i18n.localize("STRESS.Hud.Stress")}</div>
-                    <div style="color:#eebb23; font-family:'Modesto Condensed', serif; font-size:22px; font-weight:bold;">+${exhaustionGain} ${game.i18n.localize("STRESS.Hud.Exhaustion")}</div>
-                </div>
-            </div>
-        </div>`;
-        ChatMessage.create({ speaker: ChatMessage.getSpeaker({actor}), content });
-    }
+    postStressCard(actor, {
+        title: game.i18n.localize("STRESS.Collapse.Title"),
+        tone: "danger",
+        template: "collapse",
+        data: { stressGain, exhaustionGain }
+    });
 });
+
+// Swap dnd5e's rest flow for the module's dialogs. The original config is replayed on confirm, otherwise
+// GM requests on tables with "allowRests" off would be refused.
+const restOverrides = (config) => {
+    const { dialogClass, type, ...rest } = config;
+    return rest;
+};
 
 Hooks.on("dnd5e.preLongRest", (actor, config) => {
     if (actor.type !== "character" || config.stressRestModule) return true;
-    new StressRestDialog(actor).render(true);
+    if (StressRestDialog.blockedByZeroHp(actor)) return false;
+    StressRestDialog.open(actor, restOverrides(config));
     return false;
 });
 
 Hooks.on("dnd5e.preShortRest", (actor, config) => {
     if (actor.type !== "character" || config.stressRestModule) return true;
-    new StressShortRestDialog(actor).render(true);
+    StressShortRestDialog.open(actor, restOverrides(config));
     return false;
 });

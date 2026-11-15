@@ -1,46 +1,56 @@
-<form class="stress-rest-form" autocomplete="off">
+<div class="stress-rest-form">
     <div class="vault-banner-container">
         <div class="vault-banner-img"></div>
         <div class="vault-title">{{localize "STRESS.PushingLimits.Title"}}</div>
     </div>
 
-    <div class="vault-body">
-        <p class="pl-desc">{{localize "STRESS.PushingLimits.Prompt"}}</p>
+    <input type="hidden" name="choice" value="advantage">
+    <input type="hidden" name="slotLevel" value="{{first.key}}">
 
-        <input type="hidden" name="choice" id="input-choice" value="advantage">
-        <input type="hidden" name="slotLevel" id="input-slotLevel" value="{{firstLevel}}">
-
-        <div class="category-section">
-            <div class="inventory-grid pl-choice-grid">
-                <div class="item-slot pl-choice selected" data-choice="advantage">
-                    <div class="slot-icon-container"><i class="fas fa-dice-d20"></i></div>
-                    <div class="slot-name">{{localize "STRESS.PushingLimits.Advantage"}}</div>
-                    <div class="pl-cost">+1 {{localize "STRESS.Hud.Exhaustion"}}</div>
+    <div class="rest-body">
+        <div class="rest-meters">
+            <div class="meter-group stress-meter-group">
+                <div class="label roboto-condensed-upper"><span>{{localize "STRESS.Sheet.Label"}}</span></div>
+                <div class="meter progress stress-meter meter-lg" role="meter" aria-valuemin="0" aria-valuenow="{{stressVal}}" aria-valuemax="{{maxStress}}" style="--bar-percentage: {{stressPercent}}%" data-tooltip="{{stressTooltip}}">
+                    <div class="label"><span class="value">{{stressVal}}</span><span class="separator">/</span><span class="max">{{maxStress}}</span></div>
                 </div>
-                {{#if spellLevels.length}}
-                <div class="item-slot pl-choice" data-choice="slot">
-                    <div class="slot-icon-container"><i class="fas fa-hat-wizard"></i></div>
-                    <div class="slot-name">{{localize "STRESS.PushingLimits.RecoverSlot"}}</div>
-                    <div class="pl-cost" id="pl-slot-cost">+{{firstCost}} {{localize "STRESS.Hud.Exhaustion"}}</div>
+            </div>
+            <div class="meter-group">
+                <div class="label roboto-condensed-upper"><span>{{localize "STRESS.Hud.Exhaustion"}}</span></div>
+                <div class="pips rest-pips" role="meter" aria-valuemin="0" aria-valuenow="{{exhaustVal}}" aria-valuemax="{{maxExhaustion}}" data-tooltip="{{exhaustVal}} / {{maxExhaustion}}">
+                    {{#each exhaustPips}}<span class="pip {{#if this}}filled{{/if}}"></span>{{/each}}
                 </div>
-                {{/if}}
             </div>
         </div>
 
+        <p class="rest-note pl-prompt">{{localize "STRESS.PushingLimits.Prompt"}}</p>
+
+        <section class="rest-section">
+            <h4 class="rest-section-title roboto-condensed-upper"><i class="fas fa-fist-raised"></i> {{localize "STRESS.PushingLimits.Benefit"}}</h4>
+            <div class="rest-tiles">
+                {{> stress-rest-tile input="choice" value="advantage" icon="fa-solid fa-dice-d20" title=(localize "STRESS.PushingLimits.Advantage") meta=advantageCost selected=true}}
+                {{#if spellLevels.length}}
+                {{> stress-rest-tile input="choice" value="slot" icon="fa-solid fa-hat-wizard" title=(localize "STRESS.PushingLimits.RecoverSlot") meta=first.costLabel}}
+                {{/if}}
+            </div>
+        </section>
+
         {{#if spellLevels.length}}
-        <div class="category-section" id="pl-slot-section" style="display:none;">
-            <div class="category-header"><i class="fas fa-hat-wizard"></i> {{localize "STRESS.PushingLimits.SlotLevel"}}</div>
-            <div class="custom-select-wrapper">
-                <div class="custom-select-trigger"><span>{{firstLabel}}</span></div>
+        <section class="rest-section pl-slot-section" hidden>
+            <h4 class="rest-section-title roboto-condensed-upper"><i class="fas fa-hat-wizard"></i> {{localize "STRESS.PushingLimits.SlotLevel"}}</h4>
+            <div class="custom-select-wrapper rest-select" data-input="slotLevel">
+                <div class="custom-select-trigger" data-action="toggleSelect"><span>{{first.label}}</span></div>
                 <div class="custom-options">
                     {{#each spellLevels}}
-                    <span class="custom-option {{#if @first}}selected{{/if}}" data-value="{{this.level}}" data-cost="{{this.cost}}">{{this.label}}</span>
+                    <span class="custom-option {{#if @first}}selected{{/if}}" data-action="selectOption" data-value="{{key}}" data-cost-label="{{costLabel}}">{{label}}</span>
                     {{/each}}
                 </div>
             </div>
-        </div>
+        </section>
         {{/if}}
-
-        <button type="submit" class="btn-gold"><i class="fas fa-fist-raised"></i> {{localize "STRESS.PushingLimits.Confirm"}}</button>
     </div>
-</form>
+
+    <footer class="rest-footer">
+        <button type="submit" class="btn-gold"><i class="fas fa-fist-raised"></i> {{localize "STRESS.PushingLimits.Confirm"}}</button>
+    </footer>
+</div>

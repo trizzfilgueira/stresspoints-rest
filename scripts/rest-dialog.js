@@ -1,5 +1,8 @@
-import { StressManager, STRESS_CONFIG } from "./stress-manager.js";
+import { StressManager, STRESS_CONFIG, esc } from "./stress-manager.js";
 import { ItemHandler } from "./item-handler.js";
+import { StressDialogBase } from "./dialog-base.js";
+import { postStressCard, tone, stressBonusText, logIcon } from "./chat-card.js";
+import { envLevel, envOptions, gmControlsEnvironment, actorEnvironment } from "./environment.js";
 
 const RARITY_TIERS = [
     { key: "common",    i18n: "Common",    multiplier: 1,  bonus: 0, color: "#cfcdc2" },
@@ -8,288 +11,293 @@ const RARITY_TIERS = [
     { key: "veryrare",  i18n: "VeryRare",  multiplier: 20, bonus: 3, color: "#a335ee" },
     { key: "legendary", i18n: "Legendary", multiplier: 50, bonus: 4, color: "#ff8000" }
 ];
+const BUY_PREFIX = "buy_external_";
+const BASE_RECOVERY = -2;
 
-export class StressRestDialog extends FormApplication {
-    constructor(actor) { super(); this.actor = actor; }
+const PROVISIONS = {
+    food: {
+        icon: "utensils", buyIcon: "bowl-food", costKey: "foodCost", curKey: "foodCurrency", modeKey: "foodMode",
+        success: "STRESS.Msg.EatSuccess", missing: "STRESS.Report.NoFood", check: "STRESS.Labels.FoodCheck"
+    },
+    drink: {
+        icon: "glass-water", buyIcon: "glass-water", costKey: "drinkCost", curKey: "drinkCurrency", modeKey: "drinkMode",
+        success: "STRESS.Msg.DrinkSuccess", missing: "STRESS.Report.NoDrink", check: "STRESS.Labels.DrinkCheck"
+    }
+};
 
-    static get defaultOptions() {
-        return foundry.utils.mergeObject(super.defaultOptions, {
-            id: "stress-long-rest",
-            template: "modules/stresspoints-rest/templates/long-rest.hbs",
-            title: game.i18n.localize("STRESS.Dialog.LongRest"),
-            width: 500,
-            classes: ["stress-rest-dialog"],
-            closeOnSubmit: true
+const TENT_RE = /(?<!\p{L})(?:tent|barraca|tenda)(?!\p{L})/iu;
+const BEDROLL_RE = /(?<!\p{L})(?:bedroll|saco de dormir)(?!\p{L})/iu;
+const IMMUNE_NAME_RE = /warforged|forjado|reborn|renascido/i;
+const IMMUNE_TYPES = new Set(["construct", "undead"]);
+
+/** Stress removed by eating/drinking an item of this rarity (artifacts count as legendary). */
+const rarityBonus = item => {
+    const rarity = String(item.system.rarity ?? "").toLowerCase();
+    return rarity === "artifact" ? 4 : (RARITY_TIERS.find(t => t.key === rarity)?.bonus ?? 0);
+};
+
+const setting = key => game.settings.get(STRESS_CONFIG.MODULE_ID, key);
+const round2 = n => Math.round(n * 100) / 100;
+
+export class StressRestDialog extends StressDialogBase {
+    constructor(actor, restConfig = {}) {
+        super(actor);
+        this.restConfig = restConfig;
+    }
+
+    _refreshArgs(restConfig) {
+        if (restConfig) this.restConfig = restConfig;
+    }
+
+    static DEFAULT_OPTIONS = {
+        window: { title: "STRESS.Dialog.LongRest", icon: "fas fa-campground" },
+        classes: ["stress-long-rest", "dnd5e2"],
+        position: { width: 560 },
+        form: { handler: StressRestDialog.#onSubmit }
+    };
+
+    static PARTS = {
+        form: { template: "modules/stresspoints-rest/templates/long-rest.hbs" }
+    };
+
+    static init() {
+        // No healing item: drop the HP from the rest result. Restoring and reverting it would trigger the 0 HP collapse.
+        Hooks.on("dnd5e.preRestCompleted", (actor, result, config) => {
+            if (!config?.stressSkipHp) return;
+            delete result.updateData?.["system.attributes.hp.value"];
+            if (result.deltas) result.deltas.hitPoints = 0;
+            result.dhp = 0;
         });
     }
 
-    getData() {
-        const data = super.getData();
-        const mid = STRESS_CONFIG.MODULE_ID;
-        data.actor = this.actor;
-        data.hpVal = this.actor.system.attributes.hp.value;
-        data.hpMax = this.actor.system.attributes.hp.max;
-        data.hpPercent = Math.floor((data.hpVal / data.hpMax) * 100);
-        data.stressVal = StressManager.getStress(this.actor);
-        data.stressPercent = Math.floor((data.stressVal / STRESS_CONFIG.MAX_STRESS) * 100);
-        data.exhaustVal = this.actor.system.attributes.exhaustion;
-        data.exhaustPercent = Math.floor((data.exhaustVal / 6) * 100);
-
-        data.useEnvironment = game.settings.get(mid, "environmentMode");
-        data.useHealItems = game.settings.get(mid, "requireHealerKitLong");
-        data.foodCost = game.settings.get(mid, "foodCost");
-        data.foodCur = game.settings.get(mid, "foodCurrency");
-        data.drinkCost = game.settings.get(mid, "drinkCost");
-        data.drinkCur = game.settings.get(mid, "drinkCurrency");
+    async _prepareContext(options) {
+        const context = await super._prepareContext(options);
+        const actor = this.actor;
 
         const buildBuyOptions = (baseCost, cur, maxRarityKey) => {
-            if (!baseCost) return [];
-            const maxIdx = RARITY_TIERS.findIndex(t => t.key === maxRarityKey);
-            return RARITY_TIERS.slice(0, maxIdx + 1).map(tier => ({
-                value: `buy_external_${tier.key}`,
-                price: parseFloat((baseCost * tier.multiplier).toFixed(2)),
-                cur,
-                color: tier.color,
-                bonus: tier.bonus,
-                label: game.i18n.localize(`STRESS.Rarity.${tier.i18n}`)
-            }));
+            if (!(baseCost > 0)) return [];
+            const maxIdx = Math.max(0, RARITY_TIERS.findIndex(t => t.key === maxRarityKey));
+            return RARITY_TIERS.slice(0, maxIdx + 1).map(tier => {
+                const price = round2(baseCost * tier.multiplier);
+                return {
+                    value: `${BUY_PREFIX}${tier.key}`,
+                    color: tier.color,
+                    label: game.i18n.localize(`STRESS.Rarity.${tier.i18n}`),
+                    priceText: `${price} ${cur}`,
+                    tip: StressDialogBase.bonusLabel(tier.bonus)
+                };
+            });
         };
 
-        data.foodBuyOptions = buildBuyOptions(data.foodCost, data.foodCur, game.settings.get(mid, "maxFoodRarity"));
-        data.drinkBuyOptions = buildBuyOptions(data.drinkCost, data.drinkCur, game.settings.get(mid, "maxDrinkRarity"));
-
-        const consumables = this.actor.items.filter(i => i.type === "consumable");
-        data.foodItems = consumables.filter(i => i.system.type?.value === "food" && !this._isDrink(i));
-        data.drinkItems = consumables.filter(i => i.system.type?.value === "food" && this._isDrink(i));
-        data.healItems = consumables.filter(i =>
-            i.system.type?.value === "potion" ||
-            i.name.toLowerCase().match(/kit|curandeiro|healer/) ||
-            i.name.toLowerCase().match(/bandage|atadura|bandagem/)
-        );
-
-        return data;
+        return Object.assign(context, StressDialogBase.hudContext(actor), {
+            actor,
+            useEnvironment: setting("environmentMode"),
+            gmEnvironment: gmControlsEnvironment(),
+            campEnv: envLevel(actorEnvironment(actor)),
+            envOptions: envOptions(0),
+            useHealItems: setting("requireHealerKitLong"),
+            foodBuyOptions: buildBuyOptions(setting("foodCost"), setting("foodCurrency"), setting("maxFoodRarity")),
+            drinkBuyOptions: buildBuyOptions(setting("drinkCost"), setting("drinkCurrency"), setting("maxDrinkRarity")),
+            foodItems: StressDialogBase.slotItems(ItemHandler.itemsOfKind(actor, "food"), rarityBonus),
+            drinkItems: StressDialogBase.slotItems(ItemHandler.itemsOfKind(actor, "drink"), rarityBonus),
+            healItems: StressDialogBase.slotItems(ItemHandler.itemsOfKind(actor, "heal"))
+        });
     }
 
-    _isDrink(i) { return i.name.toLowerCase().match(/água|water|drink|suco|cerveja|vinho|ale|cantil|skin|wasser|bier|wein|tea|saft|milk|met/); }
-
-    async _deductCurrency(amount, type) {
-        const rates = { "pp": 1000, "gp": 100, "ep": 50, "sp": 10, "cp": 1 };
-        let actorCurrency = foundry.utils.duplicate(this.actor.system.currency);
-        let totalInCp = 0;
-        for (let [denom, qty] of Object.entries(actorCurrency)) { totalInCp += (qty * (rates[denom] || 0)); }
-        const costInCp = amount * rates[type];
-        if (totalInCp < costInCp) return false;
-        let remainingCp = totalInCp - costInCp;
-        const newCurrency = {
-            pp: Math.floor(remainingCp / 1000),
-            gp: Math.floor((remainingCp % 1000) / 100),
-            ep: Math.floor((remainingCp % 100) / 50),
-            sp: Math.floor((remainingCp % 50) / 10),
-            cp: Math.floor(remainingCp % 10)
-        };
-        await this.actor.update({ "system.currency": newCurrency });
-        return true;
+    static async #onSubmit(event, form, formData) {
+        // Read the form, then close; the rolls and the rest happen afterwards.
+        const envLabel = this.element.querySelector(".custom-option.selected")?.dataset.label ?? envLevel(formData.object.environment).label;
+        this.close();
+        try {
+            await this._performRest(formData.object, envLabel);
+        } catch (err) {
+            console.error("Stress Points & Rest | Long rest failed:", err);
+            ui.notifications.error(game.i18n.localize("STRESS.Warn.RestFailed"));
+        }
     }
 
+    _isImmune() {
+        const actor = this.actor;
+        // On characters the species is an embedded Item; its creature type lives on the item, not on details.type.
+        const species = actor.system.details?.race;
+        const speciesName = typeof species === "string" ? species : species?.name;
+        const creatureType = species?.system?.type?.value ?? actor.system.details?.type?.value;
+        return IMMUNE_NAME_RE.test(speciesName ?? "") || IMMUNE_TYPES.has(String(creatureType ?? "").toLowerCase());
+    }
+
+    // Resolves to null when the roll is cancelled.
     async _rollConSave(dc, flavorText) {
-        const result = await this.actor.rollSavingThrow(
-            { ability: "con" },
+        if (dc <= 0) return { success: true, total: 0 };
+        const rolls = await this.actor.rollSavingThrow(
+            { ability: "con", target: dc },
             {},
-            { data: { flavor: `${flavorText} -> <b>CD ${dc}</b>` } }
+            { data: { flavor: `${flavorText} → <b>${game.i18n.localize("STRESS.Env.DC")} ${dc}</b>` } }
         );
-        const roll = Array.isArray(result) ? result[0] : result;
+        const roll = Array.isArray(rolls) ? rolls[0] : rolls;
+        if (!roll) return null;
         return { success: roll.total >= dc, total: roll.total };
     }
 
-    async _updateObject(event, formData) {
-        // Grab anything that depends on the still-rendered form before closing the window right away —
-        // the rest of the processing (rolls, longRest, chat report) continues in the background afterward.
-        const envLabel = this.element.find('.custom-option.selected').text();
-        this.close();
-
-        let modifiers = 0;
-        let logs = [];
-        let usedHeal = false;
-        const actor = this.actor;
-        const mid = STRESS_CONFIG.MODULE_ID;
-        const stressStart = StressManager.getStress(actor);
-        const isImmune = actor.system.details.race?.name?.toLowerCase().match(/warforged|forjado|reborn/) ||
-                         actor.system.details.type?.value?.toLowerCase().match(/construct|undead/);
-        const buyLabel = ` (${game.i18n.localize("STRESS.Msg.BuyExternal")})`;
-
-        const getRarityBonus = (item) => {
-            switch (item.system.rarity?.toLowerCase()) {
-                case "uncommon":  return 1;
-                case "rare":      return 2;
-                case "veryrare":  return 3;
-                case "legendary": return 4;
-                default:          return 0;
-            }
-        };
-
-        if (isImmune) {
-            logs.push(`🍴 ${game.i18n.localize("STRESS.Msg.ImmuneFood")}`);
-            logs.push(`🥤 ${game.i18n.localize("STRESS.Msg.ImmuneDrink")}`);
-        } else {
-            if (formData.foodId?.startsWith("buy_external_")) {
-                const rarityKey = formData.foodId.slice("buy_external_".length);
-                const tier = RARITY_TIERS.find(t => t.key === rarityKey) ?? RARITY_TIERS[0];
-                const cost = game.settings.get(mid, "foodCost") * tier.multiplier;
-                if (await this._deductCurrency(cost, game.settings.get(mid, "foodCurrency"))) {
-                    const rarityLabel = game.i18n.localize(`STRESS.Rarity.${tier.i18n}`);
-                    const bonusText = tier.bonus > 0 ? ` <b style="color:#9cdeba">(-${tier.bonus} ${game.i18n.localize("STRESS.Hud.Stress")})</b>` : "";
-                    logs.push(`🥘 ${game.i18n.localize("STRESS.Msg.EatSuccess")}${buyLabel} <span style="color:${tier.color}">(${rarityLabel})</span>${bonusText}`);
-                    modifiers -= tier.bonus;
-                } else {
-                    modifiers += 1;
-                    logs.push(`🍴 <span style="color:#ffcc00">${game.i18n.localize("STRESS.Msg.InsufficientFunds")}</span> ${game.i18n.localize("STRESS.Report.NoFood")}`);
-                }
-            } else if (formData.foodId) {
-                const item = actor.items.get(formData.foodId);
-                const bonus = getRarityBonus(item);
-                const consumed = await ItemHandler.consume(actor, formData.foodId);
-                if (consumed) {
-                    const bonusText = bonus > 0 ? ` <b style="color:#9cdeba">(-${bonus} ${game.i18n.localize("STRESS.Hud.Stress")})</b>` : "";
-                    logs.push(`🍴 ${game.i18n.localize("STRESS.Msg.EatSuccess")}: ${item.name}${bonusText}`);
-                    modifiers -= bonus;
-                }
-            } else if (game.settings.get(mid, "foodMode") === "roll") {
-                const check = await this._rollConSave(10, game.i18n.localize("STRESS.Labels.FoodCheck"));
-                if (check.success) {
-                    logs.push(`🍴 ${game.i18n.localize("STRESS.Msg.Saved")}`);
-                } else {
-                    modifiers += 1;
-                    logs.push(`🍴 ${game.i18n.localize("STRESS.Msg.FailStress")}`);
-                }
-            } else {
-                modifiers += 1;
-                logs.push(`🍴 ${game.i18n.localize("STRESS.Report.NoFood")}`);
-            }
-
-            if (formData.drinkId?.startsWith("buy_external_")) {
-                const rarityKey = formData.drinkId.slice("buy_external_".length);
-                const tier = RARITY_TIERS.find(t => t.key === rarityKey) ?? RARITY_TIERS[0];
-                const cost = game.settings.get(mid, "drinkCost") * tier.multiplier;
-                if (await this._deductCurrency(cost, game.settings.get(mid, "drinkCurrency"))) {
-                    const rarityLabel = game.i18n.localize(`STRESS.Rarity.${tier.i18n}`);
-                    const bonusText = tier.bonus > 0 ? ` <b style="color:#9cdeba">(-${tier.bonus} ${game.i18n.localize("STRESS.Hud.Stress")})</b>` : "";
-                    logs.push(`🥤 ${game.i18n.localize("STRESS.Msg.DrinkSuccess")}${buyLabel} <span style="color:${tier.color}">(${rarityLabel})</span>${bonusText}`);
-                    modifiers -= tier.bonus;
-                } else {
-                    modifiers += 1;
-                    logs.push(`🥤 <span style="color:#ffcc00">${game.i18n.localize("STRESS.Msg.InsufficientFunds")}</span> ${game.i18n.localize("STRESS.Report.NoDrink")}`);
-                }
-            } else if (formData.drinkId) {
-                const item = actor.items.get(formData.drinkId);
-                const bonus = getRarityBonus(item);
-                const consumed = await ItemHandler.consume(actor, formData.drinkId);
-                if (consumed) {
-                    const bonusText = bonus > 0 ? ` <b style="color:#9cdeba">(-${bonus} ${game.i18n.localize("STRESS.Hud.Stress")})</b>` : "";
-                    logs.push(`🥤 ${game.i18n.localize("STRESS.Msg.DrinkSuccess")}: ${item.name}${bonusText}`);
-                    modifiers -= bonus;
-                }
-            } else if (game.settings.get(mid, "drinkMode") === "roll") {
-                const check = await this._rollConSave(10, game.i18n.localize("STRESS.Labels.DrinkCheck"));
-                if (check.success) {
-                    logs.push(`🥤 ${game.i18n.localize("STRESS.Msg.Saved")}`);
-                } else {
-                    modifiers += 1;
-                    logs.push(`🥤 ${game.i18n.localize("STRESS.Msg.FailStress")}`);
-                }
-            } else {
-                modifiers += 1;
-                logs.push(`🥤 ${game.i18n.localize("STRESS.Report.NoDrink")}`);
-            }
-        }
-
-        if (game.settings.get(mid, "environmentMode")) {
-            if (formData.environment > 0) {
-                const hasTent = actor.items.some(i => i.name.toLowerCase().match(/\btent\b|\bbarraca\b/));
-                const hasBedroll = actor.items.some(i => i.name.toLowerCase().match(/\bbedroll\b|\bsaco de dormir\b/));
-
-                let envBonus = 0;
-                if (hasTent) { envBonus += 4; logs.push(`⛺ <b>${game.i18n.localize("STRESS.Item.Tent")}:</b> -4 CD`); }
-                if (hasBedroll) { envBonus += 2; logs.push(`🛌 <b>${game.i18n.localize("STRESS.Item.Bedroll")}:</b> -2 CD`); }
-
-                const check = await this._rollConSave(Math.max(0, formData.environment - envBonus), game.i18n.localize("STRESS.Labels.EnvCheck"));
-                const statusIcon = check.success ? "🌍" : "💀";
-                const failText = !check.success ? (modifiers++, ` <span style='color:#ff5555'>+1 ${game.i18n.localize("STRESS.Hud.Stress")}</span>`) : "";
-
-                logs.push(`${statusIcon} ${game.i18n.format("STRESS.Report.EnvUnsafe", { type: envLabel.split(' ').slice(1).join(' ') })}${failText}`);
-            } else {
-                logs.push(`🌳 ${game.i18n.localize("STRESS.Report.EnvSafe")}`);
-            }
-        }
-
-        if (game.settings.get(mid, "requireHealerKitLong")) {
-            if (formData.healId && (await ItemHandler.consume(actor, formData.healId, { silent: false }))) {
-                usedHeal = true;
-                logs.push(`💊 ${game.i18n.localize("STRESS.Report.UsedItem")}`);
-            } else {
-                logs.push(`💊 <span style="color:#eebb23">${game.i18n.localize("STRESS.Report.NoHeal")}</span>`);
-            }
-        }
-
-        if (!game.settings.get(mid, "requireHealerKitLong") || usedHeal) {
-            logs.push(`<span style="color:#9cdeba">${game.i18n.localize("STRESS.Report.HPFull")}</span>`);
-        }
-
-        const hpBefore = actor.system.attributes.hp.value;
-        await actor.longRest({ dialog: false, chat: false, newDay: true, stressRestModule: true });
-
-        if (game.settings.get(mid, "requireHealerKitLong") && !usedHeal) {
-            await actor.update({ "system.attributes.hp.value": hpBefore });
-        }
-
-        const baseRecovery = -2;
-        const finalStress = Math.clamp(stressStart + baseRecovery + modifiers, 0, STRESS_CONFIG.MAX_STRESS);
-
-        await actor.update({
-            [`flags.${mid}.${STRESS_CONFIG.FLAG_NAME}`]: finalStress,
-            "system.attributes.exhaustion": Math.floor(finalStress / STRESS_CONFIG.RATIO)
-        }, { stressRest: true });
-
-        const bannerImg = "systems/dnd5e/ui/official/banner-character-dark.webp";
-        const content = `<div style="background:#111215; border:1px solid #000; color:#cfcdc2; font-family:'Signika', sans-serif; margin-top:5px;">
-            <div style="position:relative; height:60px; overflow:hidden; border-bottom:1px solid #333;">
-                <div style="position:absolute; width:100%; height:100%; background:url('${bannerImg}') top center/cover; opacity:0.5;"></div>
-                <h3 style="position:relative; z-index:2; text-align:center; margin:0; padding-top:18px; color:#ecebdb; font-family:'Modesto Condensed', serif; font-size:24px; text-shadow:0 0 5px black; text-transform:uppercase;">${game.i18n.localize("STRESS.Report.Title")}</h3>
-            </div>
-            <div style="padding:15px; text-align:center;">
-                <div style="font-family:'Modesto Condensed', serif; font-size:26px; color:#ecebdb; text-transform:uppercase; margin-bottom:15px;">${actor.name}</div>
-                <div style="text-align:left; margin-bottom:15px; border-top:1px solid #333; padding-top:10px;">
-                    ${logs.map(l => `<div style="padding:4px 0; font-size:13px; color:#eee;">${l}</div>`).join("")}
-                </div>
-                <div style="display:flex; justify-content:space-between; font-size:12px; color:#777; border-top:1px solid rgba(255,255,255,0.05); padding-top:8px;">
-                    <span>${game.i18n.localize("STRESS.Report.Start")}: <b>${stressStart}</b></span>
-                    <span>${game.i18n.localize("STRESS.Report.Recovery")}: <b>${baseRecovery}</b></span>
-                    <span>${game.i18n.localize("STRESS.Report.Modifiers")}: <b>${modifiers >= 0 ? "+" + modifiers : modifiers}</b></span>
-                </div>
-                <div style="padding:10px; border:1px solid #4a7558; background:rgba(10, 30, 15, 0.6); color:#9cdeba; font-weight:bold; font-family:'Modesto Condensed', serif; font-size:22px;">
-                    ${game.i18n.localize("STRESS.Report.FinalStress")}: ${finalStress}
-                </div>
-            </div></div>`;
-
-        ChatMessage.create({ speaker: ChatMessage.getSpeaker({actor}), content });
+    // 2014 and 2024 rules: a long rest needs at least 1 HP.
+    static blockedByZeroHp(actor) {
+        if (!setting("longRestNeedsHp")) return false;
+        if ((Number(actor.system.attributes?.hp?.value) || 0) > 0) return false;
+        ui.notifications.warn(game.i18n.format("STRESS.Warn.LongRestNeedsHp", { name: actor.name }));
+        return true;
     }
 
-    activateListeners(html) {
-        super.activateListeners(html);
-        html.find('.item-slot').click(ev => {
-            const li = $(ev.currentTarget);
-            html.find(`#input-${li.data("target")}`).val(li.data("value"));
-            li.parent().find('.item-slot').removeClass('selected');
-            li.addClass('selected');
+    async _performRest(data, envLabel) {
+        const actor = this.actor;
+        // HP may have dropped while the dialog was open.
+        if (StressRestDialog.blockedByZeroHp(actor)) return;
+        const logs = [];
+        let modifiers = 0;
+        const stressStart = StressManager.getStress(actor);
+        const isImmune = this._isImmune();
+        const requireHeal = setting("requireHealerKitLong");
+
+        // Saves come first: a cancelled roll aborts the rest before anything is spent.
+        const needsCheck = kind => !isImmune && !data[`${kind}Id`] && setting(PROVISIONS[kind].modeKey) === "roll";
+        const checks = {};
+        for (const kind of ["food", "drink"]) {
+            if (!needsCheck(kind)) continue;
+            checks[kind] = await this._rollConSave(10, game.i18n.localize(PROVISIONS[kind].check));
+            if (!checks[kind]) return this._abort();
+        }
+
+        let envResult = null;
+        let envBonusLogs = [];
+        // When the GM controls the camp, the current world value wins over whatever the form says.
+        if (gmControlsEnvironment()) {
+            const camp = envLevel(actorEnvironment(this.actor));
+            data.environment = camp.dc;
+            envLabel = camp.label;
+        }
+        const envDc = Number(data.environment) || 0;
+        if (setting("environmentMode") && envDc > 0) {
+            let envBonus = 0;
+            if (actor.items.some(i => TENT_RE.test(i.name))) {
+                envBonus += 4;
+                envBonusLogs.push(`${logIcon("tent")} <b>${game.i18n.localize("STRESS.Item.Tent")}:</b> -4 ${game.i18n.localize("STRESS.Env.DC")}`);
+            }
+            if (actor.items.some(i => BEDROLL_RE.test(i.name))) {
+                envBonus += 2;
+                envBonusLogs.push(`${logIcon("bed")} <b>${game.i18n.localize("STRESS.Item.Bedroll")}:</b> -2 ${game.i18n.localize("STRESS.Env.DC")}`);
+            }
+            envResult = await this._rollConSave(Math.max(0, envDc - envBonus), game.i18n.localize("STRESS.Labels.EnvCheck"));
+            if (!envResult) return this._abort();
+        }
+
+        // Run the dnd5e rest before spending anything, so a refused rest costs nothing. Exhaustion follows
+        // stress, so dnd5e's own reduction is off, and HP only comes back with a healing item.
+        let healItem = requireHeal && data.healId ? actor.items.get(data.healId) : null;
+        if (healItem && !ItemHandler.hasSupply(healItem)) healItem = null;
+        const recoversHp = !requireHeal || !!healItem;
+        const restResult = await actor.longRest({
+            ...this.restConfig,
+            dialog: false,
+            // A GM-requested rest only counts as done once dnd5e posts its own result message.
+            chat: Boolean(this.restConfig.request),
+            exhaustionDelta: 0,
+            stressRestModule: true,
+            stressSkipHp: !recoversHp
         });
-        const wrapper = html.find('.custom-select-wrapper');
-        html.find('.custom-select-trigger').click(e => { e.stopPropagation(); wrapper.toggleClass('open'); });
-        html.find('.custom-option').click(ev => {
-            const el = $(ev.currentTarget);
-            html.find('.custom-option').removeClass('selected');
-            el.addClass('selected');
-            html.find('.custom-select-trigger span').text(el.text());
-            html.find('#input-environment').val(el.data('value'));
-            wrapper.removeClass('open');
+        if (!restResult) return;
+
+        // Food and drink
+        if (isImmune) {
+            logs.push(`${logIcon("utensils")} ${game.i18n.localize("STRESS.Msg.ImmuneFood")}`);
+            logs.push(`${logIcon("glass-water")} ${game.i18n.localize("STRESS.Msg.ImmuneDrink")}`);
+        } else {
+            for (const kind of ["food", "drink"]) {
+                modifiers += await this._resolveProvision(kind, data[`${kind}Id`], checks[kind], logs);
+            }
+        }
+
+        // Environment
+        if (setting("environmentMode")) {
+            if (envResult) {
+                logs.push(...envBonusLogs);
+                let failText = "";
+                if (!envResult.success) {
+                    modifiers += 1;
+                    failText = ` ${tone("bad", `+1 ${game.i18n.localize("STRESS.Hud.Stress")}`)}`;
+                }
+                logs.push(`${logIcon(envResult.success ? "shield-halved" : "skull")} ${game.i18n.format("STRESS.Report.EnvUnsafe", { type: esc(envLabel) })}${failText}`);
+            } else {
+                logs.push(`${logIcon("tree")} ${game.i18n.localize("STRESS.Report.EnvSafe")}`);
+            }
+        }
+
+        // Healing item, spent only now that the rest went through
+        if (requireHeal) {
+            if (healItem) await ItemHandler.consume(actor, healItem.id, { silent: false });
+            logs.push(healItem
+                ? `${logIcon("kit-medical")} ${game.i18n.localize("STRESS.Report.UsedItem")}: <b>${esc(healItem.name)}</b>`
+                : `${logIcon("kit-medical")} ${tone("warn", game.i18n.localize("STRESS.Report.NoHeal"))}`);
+        }
+        if (recoversHp) logs.push(tone("good", game.i18n.localize("STRESS.Report.HPFull")));
+
+        const finalStress = StressManager.clampStress(stressStart + BASE_RECOVERY + modifiers);
+        await StressManager.setStress(actor, finalStress, { stressRest: true });
+
+        await postStressCard(actor, {
+            title: game.i18n.localize("STRESS.Report.Title"),
+            template: "long-rest",
+            data: {
+                logs,
+                start: stressStart,
+                recovery: BASE_RECOVERY,
+                modifiers: modifiers >= 0 ? `+${modifiers}` : modifiers,
+                final: finalStress
+            }
         });
+    }
+
+    _abort() {
+        ui.notifications.warn(game.i18n.localize("STRESS.Warn.RestCancelled"));
+    }
+
+    // Buy, consume, roll for or go without food or drink. Returns the stress modifier.
+    async _resolveProvision(kind, choice, check, logs) {
+        const cfg = PROVISIONS[kind];
+        const actor = this.actor;
+        const missing = () => {
+            logs.push(`${logIcon(cfg.icon)} ${game.i18n.localize(cfg.missing)}`);
+            return 1;
+        };
+
+        if (choice?.startsWith(BUY_PREFIX)) {
+            const tier = RARITY_TIERS.find(t => t.key === choice.slice(BUY_PREFIX.length)) ?? RARITY_TIERS[0];
+            const cost = round2(setting(cfg.costKey) * tier.multiplier);
+            if (!(await ItemHandler.payCurrency(actor, cost, setting(cfg.curKey)))) {
+                logs.push(`${logIcon(cfg.icon)} ${tone("gold", game.i18n.localize("STRESS.Msg.InsufficientFunds"))} ${game.i18n.localize(cfg.missing)}`);
+                return 1;
+            }
+            const rarityLabel = game.i18n.localize(`STRESS.Rarity.${tier.i18n}`);
+            const buyLabel = ` (${game.i18n.localize("STRESS.Msg.BuyExternal")})`;
+            logs.push(`${logIcon(cfg.buyIcon)} ${game.i18n.localize(cfg.success)}${buyLabel} <span class="sr-accent" style="--sr-accent: ${tier.color}">(${rarityLabel})</span>${stressBonusText(tier.bonus)}`);
+            return -tier.bonus;
+        }
+
+        if (choice) {
+            const item = await ItemHandler.consume(actor, choice);
+            // An empty or missing item means the character did not actually eat/drink.
+            if (!item) return missing();
+            const bonus = rarityBonus(item);
+            logs.push(`${logIcon(cfg.icon)} ${game.i18n.localize(cfg.success)}: ${esc(item.name)}${stressBonusText(bonus)}`);
+            return -bonus;
+        }
+
+        if (check) {
+            if (check.success) {
+                logs.push(`${logIcon(cfg.icon)} ${game.i18n.localize("STRESS.Msg.Saved")}`);
+                return 0;
+            }
+            logs.push(`${logIcon(cfg.icon)} ${game.i18n.localize("STRESS.Msg.FailStress")}`);
+            return 1;
+        }
+
+        return missing();
     }
 }

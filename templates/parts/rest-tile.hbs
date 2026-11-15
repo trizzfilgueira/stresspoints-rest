@@ -1,0 +1,8 @@
+{{!-- Params: input, value, title, img | icon, color, meta, tip, label, selected --}}
+<div class="rest-tile {{#if selected}}selected{{/if}}" role="button" data-action="selectSlot" data-input="{{input}}" data-value="{{value}}"
+     {{#if label}}data-label="{{label}}"{{/if}} {{#if tip}}data-tooltip="{{tip}}"{{/if}} {{#if color}}style="--rest-accent: {{color}}"{{/if}}>
+    {{#if img}}<img class="gold-icon rest-tile-icon" src="{{img}}" alt="">
+    {{else}}<span class="gold-icon rest-tile-icon"><i class="{{icon}}"></i></span>{{/if}}
+    <span class="rest-tile-name">{{title}}</span>
+    {{#if meta}}<span class="rest-tile-meta">{{meta}}</span>{{/if}}
+</div>

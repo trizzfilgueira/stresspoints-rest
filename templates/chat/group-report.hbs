@@ -1,0 +1,15 @@
+{{#if camp}}
+<p class="stress-card__note"><i class="{{camp.fa}} fa-fw"></i> {{localize "STRESS.Panel.Camp"}}: <b>{{camp.label}}</b> · {{camp.dcLabel}}</p>
+{{/if}}
+<section class="deltas">
+    <ul class="unlist">
+        {{#each actors}}
+        <li class="delta stress-card__member">
+            <span class="label">{{name}}{{#if place}} <span class="sr-muted"><i class="{{place.fa}}"></i> {{place.label}}</span>{{/if}}</span>
+            <span class="value"><span class="sr-stress">{{stress}}/{{maxStress}}</span> · <span class="sr-{{tone}}">{{localize "STRESS.Card.Exhaustion"}} {{exhaustion}}</span></span>
+        </li>
+        {{else}}
+        <li class="delta sr-muted">{{localize "STRESS.Panel.NoPlayers"}}</li>
+        {{/each}}
+    </ul>
+</section>

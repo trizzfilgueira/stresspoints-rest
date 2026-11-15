@@ -1,0 +1,14 @@
+<div class="chat-card stress-card{{#if tone}} stress-card--{{tone}}{{/if}}">
+    <section class="card-header description">
+        <header class="summary">
+            <span class="gold-icon stress-card__icon"><i class="{{icon}}"></i></span>
+            <div class="name-stacked border">
+                <span class="title stress-card__title">{{title}}</span>
+                {{#if actorName}}<span class="subtitle stress-card__actor">{{actorName}}</span>{{/if}}
+            </div>
+        </header>
+    </section>
+    <div class="stress-card__body">
+        {{{body}}}
+    </div>
+</div>

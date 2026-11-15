@@ -1,0 +1,12 @@
+<ul class="unlist stress-card__log">
+    {{#each logs}}<li>{{{this}}}</li>{{/each}}
+</ul>
+<section class="deltas">
+    <strong class="roboto-condensed-upper">{{localize "STRESS.Sheet.Label"}}</strong>
+    <ul class="unlist">
+        <li class="delta"><span class="label">{{localize "STRESS.Report.Start"}}</span><span class="value">{{start}}</span></li>
+        <li class="delta"><span class="label">{{localize "STRESS.Report.Recovery"}}</span><span class="value sr-good">{{recovery}}</span></li>
+        <li class="delta"><span class="label">{{localize "STRESS.Report.Modifiers"}}</span><span class="value">{{modifiers}}</span></li>
+        <li class="delta stress-card__total"><span class="label">{{localize "STRESS.Report.FinalStress"}}</span><span class="value">{{final}}</span></li>
+    </ul>
+</section>

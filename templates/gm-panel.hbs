@@ -1,0 +1,81 @@
+<div class="stress-rest-form gm-panel">
+    <div class="vault-banner-container">
+        <div class="vault-banner-img"></div>
+        <div class="vault-title">{{localize "STRESS.Panel.Title"}}</div>
+    </div>
+
+    <div class="gm-panel-body">
+        {{#if useEnvironment}}
+        <div class="items-section card gm-camp">
+            <div class="items-header header">
+                <h3 class="item-name">{{localize "STRESS.Panel.Camp"}}</h3>
+                <div class="item-header gm-col-note">{{#unless gmEnvironment}}{{localize "STRESS.Panel.PlayersChoose"}}{{/unless}}</div>
+            </div>
+            <ol class="item-list unlist gm-env-list">
+                {{#each envOptions}}
+                <li class="item {{#if selected}}gm-selected{{/if}}">
+                    <div class="item-row">
+                        <div class="item-name item-action" role="button" data-action="setEnvironment" data-dc="{{dc}}" aria-pressed="{{#if selected}}true{{else}}false{{/if}}">
+                            <span class="item-image gm-env-icon"><i class="{{fa}}"></i></span>
+                            <div class="name name-stacked">
+                                <span class="title">{{label}}</span>
+                                <span class="subtitle">{{#if dc}}{{localize "STRESS.Env.DC"}} {{dc}}{{else}}{{localize "STRESS.Env.NoSave"}}{{/if}}</span>
+                            </div>
+                        </div>
+                        <div class="item-detail gm-col-check">{{#if selected}}<i class="fa-solid fa-check"></i>{{/if}}</div>
+                    </div>
+                </li>
+                {{/each}}
+            </ol>
+        </div>
+        {{/if}}
+
+        <div class="items-section card gm-party">
+            <div class="items-header header">
+                <h3 class="item-name">{{localize "STRESS.Panel.GroupStatus"}}</h3>
+                <div class="item-header gm-col-hp">{{localize "STRESS.Panel.ColHp"}}</div>
+                <div class="item-header gm-col-ex">{{localize "STRESS.Hud.Exhaustion"}}</div>
+                <div class="item-header gm-col-stress">{{localize "STRESS.Hud.Stress"}}</div>
+            </div>
+            <ol class="item-list unlist">
+                {{#each actors}}
+                <li class="item {{#if danger}}gm-danger{{/if}}" data-actor-uuid="{{uuid}}">
+                    <div class="item-row">
+                        <div class="item-name">
+                            <img class="item-image gold-icon gm-portrait" src="{{img}}" alt="{{name}}" data-action="openSheet" data-tooltip="{{name}}">
+                            <div class="name name-stacked">
+                                <span class="title">{{name}}</span>
+                                {{#if @root.useEnvironment}}{{#if @root.gmEnvironment}}
+                                <select class="subtitle gm-actor-env {{#if envOverride}}override{{/if}}" data-tooltip="{{localize "STRESS.Panel.ActorEnvHint"}}" aria-label="{{localize "STRESS.Panel.ActorEnvHint"}}">
+                                    <option value="">{{localize "STRESS.Panel.UseCamp"}} ({{@root.campEnv.label}})</option>
+                                    {{#each envOptions}}
+                                    <option value="{{dc}}" {{#if selected}}selected{{/if}}>{{label}}{{#if dc}} • {{localize "STRESS.Env.DC"}} {{dc}}{{/if}}</option>
+                                    {{/each}}
+                                </select>
+                                {{/if}}{{/if}}
+                            </div>
+                        </div>
+                        <div class="item-detail gm-col-hp">{{hpVal}} <span class="gm-max">/ {{hpMax}}</span></div>
+                        <div class="item-detail gm-col-ex">{{exhaustion}} <span class="gm-max">/ {{maxExhaustion}}</span></div>
+                        <div class="item-detail item-quantity gm-col-stress" data-tooltip="{{tooltip}}">
+                            <a class="adjustment-button always-interactive" data-action="adjust" data-delta="-1"
+                               data-tooltip="{{localize "STRESS.Panel.Decrease"}}<br>{{localize "STRESS.Panel.ShiftHint"}}" aria-label="{{localize "STRESS.Panel.Decrease"}}"><i class="fa-solid fa-minus"></i></a>
+                            <span class="gm-stress-value">{{stress}} <span class="gm-max">/ {{maxStress}}</span></span>
+                            <a class="adjustment-button always-interactive" data-action="adjust" data-delta="1"
+                               data-tooltip="{{localize "STRESS.Panel.Increase"}}<br>{{localize "STRESS.Panel.ShiftHint"}}" aria-label="{{localize "STRESS.Panel.Increase"}}"><i class="fa-solid fa-plus"></i></a>
+                        </div>
+                    </div>
+                    <div class="meter-group stress-meter-group gm-actor-bar">
+                        <div class="meter progress stress-meter" role="meter" aria-valuemin="0" aria-valuenow="{{stress}}" aria-valuemax="{{maxStress}}"
+                             style="--bar-percentage: {{stressPercent}}%; --notch: {{notchPercent}}%" data-tooltip="{{tooltip}}"></div>
+                    </div>
+                </li>
+                {{else}}
+                <li class="item"><div class="item-row"><div class="item-name"><span class="title">{{localize "STRESS.Panel.NoPlayers"}}</span></div></div></li>
+                {{/each}}
+            </ol>
+        </div>
+
+        <button type="button" class="btn-gold" data-action="sendReport"><i class="fas fa-comment"></i> {{localize "STRESS.Panel.SendReport"}}</button>
+    </div>
+</div>

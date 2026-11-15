@@ -1,134 +1,124 @@
 import { ItemHandler } from "./item-handler.js";
-import { StressManager, STRESS_CONFIG } from "./stress-manager.js";
+import { STRESS_CONFIG, esc } from "./stress-manager.js";
+import { StressDialogBase } from "./dialog-base.js";
+import { postStressCard, tone, logIcon } from "./chat-card.js";
 
-export class StressShortRestDialog extends FormApplication {
-    constructor(actor) {
-        super();
-        this.actor = actor;
+const HP_PATH = "system.attributes.hp.value";
+
+// Short rests in progress, by actor uuid.
+// mode: "normal" | "blocked" (no healing item, no hit dice) | "bandage" (hit dice heal half)
+const activeRests = new Map();
+
+export class StressShortRestDialog extends StressDialogBase {
+    constructor(actor, restConfig = {}) {
+        super(actor);
+        this.restConfig = restConfig;
     }
 
-    static get defaultOptions() {
-        return foundry.utils.mergeObject(super.defaultOptions, {
-            id: "stress-short-rest",
-            template: "modules/stresspoints-rest/templates/short-rest.hbs",
-            title: game.i18n.localize("STRESS.Dialog.ShortRest"),
-            width: 400,
-            classes: ["stress-rest-dialog"],
-            closeOnSubmit: true
+    _refreshArgs(restConfig) {
+        if (restConfig) this.restConfig = restConfig;
+    }
+
+    static DEFAULT_OPTIONS = {
+        window: { title: "STRESS.Dialog.ShortRest", icon: "fas fa-campfire" },
+        classes: ["stress-short-rest", "dnd5e2"],
+        position: { width: 440 },
+        form: { handler: StressShortRestDialog.#onSubmit }
+    };
+
+    static PARTS = {
+        form: { template: "modules/stresspoints-rest/templates/short-rest.hbs" }
+    };
+
+    static init() {
+        // Without a healing item, stop hit dice before they are rolled.
+        Hooks.on("dnd5e.preRollHitDieV2", (config) => {
+            if (activeRests.get(config?.subject?.uuid)?.mode !== "blocked") return;
+            ui.notifications.warn(game.i18n.localize("STRESS.Warn.HitDiceNeedHealer"));
+            return false;
+        });
+
+        // Bandages: halve the healing of each hit die before dnd5e applies it.
+        Hooks.on("dnd5e.rollHitDieV2", (rolls, { subject, updates }) => {
+            const state = activeRests.get(subject?.uuid);
+            if (!state) return;
+            state.rolled += 1;
+            if (state.mode !== "bandage" || !(HP_PATH in (updates?.actor ?? {}))) return;
+            const before = subject.system.attributes.hp.value;
+            updates.actor[HP_PATH] = before + Math.floor((updates.actor[HP_PATH] - before) / 2);
         });
     }
 
-    getData() {
-        const data = super.getData();
-        const mid = STRESS_CONFIG.MODULE_ID;
-        data.actor = this.actor;
-        data.hpVal = this.actor.system.attributes.hp.value;
-        data.hpMax = this.actor.system.attributes.hp.max;
-        data.hpPercent = Math.floor((data.hpVal / data.hpMax) * 100);
-
-        const stressVal = StressManager.getStress(this.actor);
-        data.stressVal = stressVal;
-        data.stressPercent = Math.floor((stressVal / STRESS_CONFIG.MAX_STRESS) * 100);
-        data.exhaustVal = this.actor.system.attributes.exhaustion;
-        data.exhaustPercent = Math.floor((data.exhaustVal / 6) * 100);
-
-        data.requireHealer = game.settings.get(mid, "requireHealerKitShort");
-
-        data.healItems = this.actor.items.filter(i =>
-            i.type === "consumable" && (
-                i.system.type?.value === "potion" ||
-                i.name.toLowerCase().match(/kit|curandeiro|healer/) ||
-                i.name.toLowerCase().match(/bandage|atadura|bandagem/)
-            )
-        );
-
-        return data;
-    }
-
-    activateListeners(html) {
-        super.activateListeners(html);
-        html.find('.item-slot').click(ev => {
-            const li = $(ev.currentTarget);
-            html.find(`#input-heal`).val(li.data("value"));
-            li.parent().find('.item-slot').removeClass('selected');
-            li.addClass('selected');
+    async _prepareContext(options) {
+        const context = await super._prepareContext(options);
+        return Object.assign(context, StressDialogBase.hudContext(this.actor), {
+            actor: this.actor,
+            requireHealer: game.settings.get(STRESS_CONFIG.MODULE_ID, "requireHealerKitShort"),
+            healItems: StressDialogBase.slotItems(ItemHandler.itemsOfKind(this.actor, "heal"))
         });
     }
 
-    async _updateObject(event, formData) {
-        let usedHealerItem = false;
-        let isBandage = false;
-        let logs = [];
-        const mid = STRESS_CONFIG.MODULE_ID;
-        const requireHealer = game.settings.get(mid, "requireHealerKitShort");
+    static async #onSubmit(event, form, formData) {
+        this.close();
+        try {
+            await this._performRest(formData.object);
+        } catch (err) {
+            console.error("Stress Points & Rest | Short rest failed:", err);
+            ui.notifications.error(game.i18n.localize("STRESS.Warn.RestFailed"));
+        }
+    }
 
-        if (formData.healId) {
-            const item = await ItemHandler.consume(this.actor, formData.healId, { silent: false });
-            if (item) {
-                usedHealerItem = true;
-                logs.push(`🩹 ${game.i18n.localize("STRESS.Report.UsedItem")}: <b>${item.name}</b>`);
-                if (item.name.toLowerCase().match(/bandage|atadura|bandagem/)) isBandage = true;
-            }
-        } else if (requireHealer) {
-            logs.push(`<span style="color:#eebb23">${game.i18n.localize("STRESS.Msg.NoItemHeal")}</span>`);
+    async _performRest(data) {
+        const actor = this.actor;
+        const requireHealer = game.settings.get(STRESS_CONFIG.MODULE_ID, "requireHealerKitShort");
+        const logs = [];
+
+        // The healing item is spent after the dnd5e rest, so cancelling that dialog keeps it.
+        let healItem = requireHealer && data.healId ? actor.items.get(data.healId) : null;
+        if (healItem && !ItemHandler.hasSupply(healItem)) {
+            ui.notifications.warn(game.i18n.format("STRESS.Warn.NoMoreItem", { name: healItem.name }));
+            healItem = null;
         }
 
-        const hpBefore = this.actor.system.attributes.hp.value;
-
-        const result = await this.actor.shortRest({
-            dialog: true,
-            chat: true,
-            stressRestModule: true
-        });
-
-        if (!result) return;
-
-        const hpAfter = this.actor.system.attributes.hp.value;
-        let hpGained = hpAfter - hpBefore;
-
+        let mode = "normal";
         if (requireHealer) {
-            if (hpGained > 0 && !usedHealerItem) {
-                await this.actor.update({ "system.attributes.hp.value": hpBefore });
-                logs.push(`<span style="color:#ff5555"><b>${game.i18n.localize("STRESS.Report.HPCritical")}</b></span>`);
-                hpGained = 0;
-            } else if (usedHealerItem && isBandage && hpGained > 0) {
-                hpGained = Math.floor(hpGained * 0.5);
-                await this.actor.update({ "system.attributes.hp.value": hpBefore + hpGained });
-                logs.push(`<span style="color:#ffcc00">${game.i18n.format("STRESS.Report.BandageEffect", { val: hpGained })}</span>`);
+            if (!healItem) mode = "blocked";
+            else if (ItemHandler.isBandage(healItem)) mode = "bandage";
+        }
+
+        const state = { mode, rolled: 0 };
+        const hpBefore = actor.system.attributes.hp.value;
+        let result;
+        activeRests.set(actor.uuid, state);
+        try {
+            result = await actor.shortRest({ ...this.restConfig, stressRestModule: true });
+        } finally {
+            activeRests.delete(actor.uuid);
+        }
+
+        // Rest cancelled before any hit die was spent: nothing happened, nothing to report.
+        if (!result && state.rolled === 0) return;
+
+        const hpGained = actor.system.attributes.hp.value - hpBefore;
+
+        if (healItem && (await ItemHandler.consume(actor, healItem.id, { silent: false }))) {
+            logs.push(`${logIcon("bandage")} ${game.i18n.localize("STRESS.Report.UsedItem")}: <b>${esc(healItem.name)}</b>`);
+            if (mode === "bandage" && hpGained > 0) {
+                logs.push(tone("gold", game.i18n.format("STRESS.Report.BandageEffect", { val: hpGained })));
             }
+        } else if (mode === "blocked") {
+            logs.push(tone("warn", game.i18n.localize("STRESS.Msg.NoItemHeal")));
         }
 
-        if (hpGained > 0) {
-            logs.push(`<span style="color:#9cdeba">${game.i18n.format("STRESS.Report.HPRestored", { val: hpGained })}</span>`);
+        // The bandage line already reports the HP recovered.
+        if (hpGained > 0 && mode !== "bandage") {
+            logs.push(tone("good", game.i18n.format("STRESS.Report.HPRestored", { val: hpGained })));
         }
 
-        const bannerImg = "systems/dnd5e/ui/official/banner-character-dark.webp";
-        const content = `
-        <div style="background:#111215; border:1px solid #000; color:#cfcdc2; font-family:'Signika', sans-serif; margin-top:5px;">
-            <div style="position:relative; height:60px; overflow:hidden; border-bottom:1px solid #333;">
-                <div style="position:absolute; width:100%; height:100%; background:url('${bannerImg}') top center/cover; opacity:0.5;"></div>
-                <h3 style="position:relative; z-index:2; text-align:center; margin:0; padding-top:18px; color:#ecebdb; font-family:'Modesto Condensed', serif; font-size:24px; text-shadow:0 0 5px black;">
-                    ${game.i18n.localize("STRESS.Report.Title")}
-                </h3>
-            </div>
-            <div style="padding:15px; text-align:center;">
-                <div style="font-family:'Modesto Condensed', serif; font-size:24px; color:#ecebdb; text-transform:uppercase; margin-bottom:15px; letter-spacing:1px;">
-                    ${this.actor.name}
-                </div>
-                <div style="text-align:left; margin-bottom:15px;">
-                    ${logs.map(l => `<div style="padding:3px 0; border-bottom:1px solid rgba(255,255,255,0.05); font-size:13px; color:#aaa;">${l}</div>`).join("")}
-                </div>
-                <div style="padding:8px; border:1px solid #4a7558;
-                            background:linear-gradient(to bottom, rgba(10, 30, 15, 0.9), rgba(20, 50, 25, 0.8));
-                            color:#9cdeba; font-weight:bold; font-family:'Modesto Condensed', serif; font-size:18px;">
-                    ${game.i18n.localize("STRESS.Report.ShortRestDone")}
-                </div>
-            </div>
-        </div>`;
-
-        ChatMessage.create({
-            speaker: ChatMessage.getSpeaker({ actor: this.actor }),
-            content: content
+        await postStressCard(actor, {
+            title: game.i18n.localize("STRESS.Report.Title"),
+            template: "short-rest",
+            data: { logs }
         });
     }
 }

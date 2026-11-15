@@ -1,33 +1,43 @@
-<form class="stress-rest-form" autocomplete="off">
+<div class="stress-rest-form">
     <div class="vault-banner-container">
         <div class="vault-banner-img"></div>
         <div class="vault-title">{{localize "STRESS.Dialog.ShortRest"}}</div>
     </div>
 
-    <div class="vault-body">
-        <input type="hidden" name="healId" id="input-heal">
-        
-        {{#if requireHealer}}
-        <div class="category-section">
-            <div class="category-header"><i class="fas fa-heart"></i> {{localize "STRESS.Category.Heal"}}</div>
-            <div class="inventory-grid">
-                <div class="item-slot selected" data-target="heal" data-value="">
-                    <div class="slot-icon-container"><i class="fas fa-times slot-icon-x"></i></div>
-                    <div class="slot-name">{{localize "STRESS.Inventory.Nothing"}}</div>
+    <input type="hidden" name="healId">
+
+    <div class="rest-body">
+        <div class="rest-meters">
+            <div class="meter-group">
+                <div class="label roboto-condensed-upper"><span>{{localize "STRESS.Hud.HP"}}</span></div>
+                <div class="meter progress hit-points meter-lg" role="meter" aria-valuemin="0" aria-valuenow="{{hpVal}}" aria-valuemax="{{hpMax}}" style="--bar-percentage: {{hpPercent}}%">
+                    <div class="label"><span class="value">{{hpVal}}</span><span class="separator">/</span><span class="max">{{hpMax}}</span></div>
                 </div>
-                {{#each healItems}}
-                <div class="item-slot" data-target="heal" data-value="{{this.id}}">
-                    <div class="slot-icon-container"><img src="{{this.img}}" class="slot-icon"></div>
-                    <div class="slot-name">{{this.name}}</div>
+            </div>
+            <div class="meter-group">
+                <div class="label roboto-condensed-upper"><span>{{localize "STRESS.Hud.HitDice"}}</span></div>
+                <div class="meter progress hit-dice meter-lg" role="meter" aria-valuemin="0" aria-valuenow="{{hdVal}}" aria-valuemax="{{hdMax}}" style="--bar-percentage: {{hdPercent}}%">
+                    <div class="label"><span class="value">{{hdVal}}</span><span class="separator">/</span><span class="max">{{hdMax}}</span></div>
                 </div>
-                {{/each}}
             </div>
         </div>
-        <p class="rest-note" style="color:#ff8888;">{{localize "STRESS.Msg.HealerReqWarning"}}</p>
+
+        {{#if requireHealer}}
+        <section class="rest-section">
+            <h4 class="rest-section-title roboto-condensed-upper"><i class="fas fa-heart"></i> {{localize "STRESS.Category.Heal"}}</h4>
+            <div class="rest-tiles">
+                {{> stress-rest-tile input="healId" value="" icon="fa-solid fa-xmark" title=(localize "STRESS.Inventory.Nothing") selected=true}}
+                {{#each healItems}}{{> stress-rest-tile input="healId" value=id title=name}}{{/each}}
+            </div>
+        </section>
+        <p class="rest-warning"><i class="fa-solid fa-triangle-exclamation"></i> {{localize "STRESS.Msg.HealerReqWarning"}}</p>
         {{else}}
-        <p class="rest-note" style="margin: 20px 0;">{{localize "STRESS.Msg.ShortRestPrompt"}}</p>
+        <p class="rest-note">{{localize "STRESS.Msg.ShortRestPrompt"}}</p>
         {{/if}}
 
-        <button type="submit" class="btn-gold"><i class="fas fa-campfire"></i> {{localize "STRESS.Button.ShortRest"}}</button>
     </div>
-</form>
+
+    <footer class="rest-footer">
+        <button type="submit" class="btn-gold"><i class="fas fa-campfire"></i> {{localize "STRESS.Button.ShortRest"}}</button>
+    </footer>
+</div>
