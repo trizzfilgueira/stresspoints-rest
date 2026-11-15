@@ -127,8 +127,11 @@ export class ItemHandler {
         }
 
         // Food, drink and bandages are used silently; potions keep their card for the heal roll.
+        // A consumption target pointing at an item the actor lacks makes dnd5e abort the use.
+        // Skip dnd5e's consumption then; the check below spends one unit instead.
+        const config = ItemHandler.#hasMissingTarget(item) ? { consume: false } : {};
         const before = ItemHandler.#spendState(item);
-        const usage = await item.use({}, { configure: false }, silent ? { create: false } : {});
+        const usage = await item.use(config, { configure: false }, silent ? { create: false } : {});
         if (!usage) return null;
         // An activity that consumes nothing would make the meal free.
         const live = actor.items.get(item.id);
@@ -139,6 +142,11 @@ export class ItemHandler {
     static #uses(item) {
         const uses = item.system.uses || {};
         return { max: parseInt(uses.max) || 0, value: parseInt(uses.value) || 0, autoDestroy: !!uses.autoDestroy };
+    }
+
+    static #hasMissingTarget(item) {
+        return item.system.activities.some(activity => activity.consumption?.targets?.some(t =>
+            (t.type === "material" || (t.type === "itemUses" && t.target)) && !item.actor.items.get(t.target)));
     }
 
     static #spendState(item) {

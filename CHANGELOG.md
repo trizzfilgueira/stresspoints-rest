@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.2.1
+
+### Fixes
+- Food, drink or healing items whose activity consumes another item the character does not have (common after copying an item) were refused by dnd5e, and the rest counted the character as not having eaten. The item is now spent normally.
+
 ## 2.2.0
 
 ### New
